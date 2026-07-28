@@ -11,11 +11,15 @@ export const REVENUECAT_IOS_KEY = 'REMPLACER_appl_xxxxxxxx';
 export const REVENUECAT_ANDROID_KEY = 'REMPLACER_goog_xxxxxxxx';
 
 /**
- * Clé API du service vision pour le scan de repas (Claude / Anthropic).
- * Tant qu'elle garde son préfixe « REMPLACER », le scan renvoie un repas
- * mocké en dev pour tester le funnel.
+ * Scan de repas — Edge Function Supabase `scan-meal`.
+ * La clé de l'API vision vit UNIQUEMENT côté serveur (secret Supabase) ;
+ * l'app n'embarque que l'URL de la fonction et la clé anon (publique par
+ * conception). Tant que l'URL garde son préfixe « REMPLACER », le scan
+ * renvoie un repas mocké en dev pour tester le funnel.
  */
-export const VISION_API_KEY = 'REMPLACER_sk-ant-xxxxxxxx';
+export const SUPABASE_FUNCTION_URL =
+  'REMPLACER_https://xxxxxxxx.supabase.co/functions/v1/scan-meal';
+export const SUPABASE_ANON_KEY = 'REMPLACER_eyJxxxxxxxx';
 
 /** Liens légaux affichés sur le paywall et le profil (exigés par Apple). */
 export const TERMS_URL = 'https://standtall.app/conditions';

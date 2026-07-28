@@ -26,6 +26,7 @@ components/          Composants réutilisables (Card, StatCard, ProgressBar,
                      ScoreGauge, QuizOption, PrimaryButton, OnboardingProgress)
 lib/                 Thème, store zustand, calcul posture, achats (RevenueCat),
                      config (clés API + liens légaux à remplir)
+supabase/            Edge Function scan-meal (la clé vision reste côté serveur)
 assets/              Icônes & images
 ```
 
