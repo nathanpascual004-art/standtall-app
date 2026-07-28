@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '@/components/Card';
 import { OnboardingProgress } from '@/components/OnboardingProgress';
 import { ScoreGauge } from '@/components/ScoreGauge';
-import { computePostureScore } from '@/lib/posture';
+import { computePostureResult } from '@/lib/posture';
 import { TOTAL_ONBOARDING_STEPS, useOnboardingStore } from '@/lib/store';
 import { colors, fontWeight, spacing } from '@/lib/theme';
 
@@ -14,7 +14,7 @@ import { colors, fontWeight, spacing } from '@/lib/theme';
  */
 export default function ResultScreen() {
   const answers = useOnboardingStore((state) => state.answers);
-  const score = computePostureScore(answers);
+  const { postureScore } = computePostureResult(answers);
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
@@ -23,7 +23,7 @@ export default function ResultScreen() {
       <Text style={styles.title}>Ton résultat</Text>
 
       <Card style={styles.gaugeCard}>
-        <ScoreGauge value={score} label="Score de posture" />
+        <ScoreGauge value={postureScore} label="Score de posture" />
       </Card>
 
       <View style={styles.footer}>
