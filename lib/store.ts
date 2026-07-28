@@ -47,20 +47,44 @@ export type QuizAnswers = {
   dailyMinutes?: DailyMinutes;
 };
 
+/** Clé du jour courant, ex. « 2026-07-28 » — sert d'index au suivi. */
+export function todayKey(): string {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${now.getFullYear()}-${month}-${day}`;
+}
+
 type OnboardingState = {
   answers: QuizAnswers;
   /** Passe à true à la fin du flow (reveal/paywall) — débloque les tabs. */
   onboardingDone: boolean;
+  /** Séances complétées, par clé du jour : { "2026-07-28": ["redressement-base"] }. */
+  completedSessions: Record<string, string[]>;
   setAnswer: <K extends keyof QuizAnswers>(key: K, value: QuizAnswers[K]) => void;
   completeOnboarding: () => void;
+  completeSession: (sessionId: string) => void;
   reset: () => void;
 };
 
 export const useOnboardingStore = create<OnboardingState>((set) => ({
   answers: {},
   onboardingDone: false,
+  completedSessions: {},
   setAnswer: (key, value) =>
     set((state) => ({ answers: { ...state.answers, [key]: value } })),
   completeOnboarding: () => set({ onboardingDone: true }),
-  reset: () => set({ answers: {}, onboardingDone: false }),
+  completeSession: (sessionId) =>
+    set((state) => {
+      const day = todayKey();
+      const done = state.completedSessions[day] ?? [];
+      if (done.includes(sessionId)) return state;
+      return {
+        completedSessions: {
+          ...state.completedSessions,
+          [day]: [...done, sessionId],
+        },
+      };
+    }),
+  reset: () => set({ answers: {}, onboardingDone: false, completedSessions: {} }),
 }));

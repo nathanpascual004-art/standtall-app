@@ -34,6 +34,7 @@ export default function RootLayout() {
         </Stack.Protected>
         <Stack.Protected guard={onboardingDone}>
           <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="session/[id]" />
         </Stack.Protected>
         <Stack.Screen name="paywall" />
       </Stack>

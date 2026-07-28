@@ -10,7 +10,8 @@ import { ScoreGauge } from '@/components/ScoreGauge';
 import { StatCard } from '@/components/StatCard';
 import { MOCK_PROGRAM_COMPLETION, MOCK_PROGRESS_SCORES } from '@/lib/mockProgress';
 import { computePostureResult } from '@/lib/posture';
-import { useOnboardingStore } from '@/lib/store';
+import { SESSIONS } from '@/lib/program';
+import { todayKey, useOnboardingStore } from '@/lib/store';
 import { colors, fontWeight, radius, spacing } from '@/lib/theme';
 
 const formatCm = (value: number) => `${value.toFixed(1).replace('.', ',')} cm`;
@@ -19,9 +20,13 @@ const formatCm = (value: number) => `${value.toFixed(1).replace('.', ',')} cm`;
 export default function StatureScreen() {
   const router = useRouter();
   const answers = useOnboardingStore((state) => state.answers);
+  const completedSessions = useOnboardingStore((state) => state.completedSessions);
   const result = computePostureResult(answers);
   const programCompletion = Math.round(MOCK_PROGRAM_COMPLETION * 100);
-  const sessionMinutes = answers.dailyMinutes ?? 10;
+
+  const doneToday = completedSessions[todayKey()] ?? [];
+  const nextSession =
+    SESSIONS.find((session) => !doneToday.includes(session.id)) ?? SESSIONS[0];
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -98,11 +103,11 @@ export default function StatureScreen() {
         <Card style={styles.sessionCard}>
           <Text style={styles.cardLabel}>Prochaine séance</Text>
           <Text style={styles.sessionTitle}>
-            Redressement de base — {sessionMinutes} min
+            {nextSession.titre} — {nextSession.durationMin} min
           </Text>
           <PrimaryButton
             label="Commencer"
-            onPress={() => router.push('/(tabs)/programme')}
+            onPress={() => router.push(`/session/${nextSession.id}`)}
           />
         </Card>
       </ScrollView>
