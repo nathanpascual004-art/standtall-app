@@ -8,9 +8,6 @@
     "scheme": "standtall",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#0a0d13",
-    "ios": {
-      "icon": "./assets/expo.icon"
-    },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#0a0d13",
@@ -26,6 +23,13 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "StandTall utilise tes photos pour analyser ta posture de profil.",
+          "cameraPermission": "StandTall utilise l'appareil photo pour prendre une photo de profil et analyser ta posture."
+        }
+      ],
       [
         "expo-splash-screen",
         {

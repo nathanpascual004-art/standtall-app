@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text } from 'react-native';
+import type { ReactNode } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, fontWeight, radius } from '@/lib/theme';
 
@@ -6,10 +7,12 @@ type QuizOptionProps = {
   label: string;
   selected?: boolean;
   onPress: () => void;
+  /** Illustration optionnelle affichée à gauche du label. */
+  icon?: ReactNode;
 };
 
 /** Option tappable du quiz — état sélectionné : bordure accent + fond cardActive. */
-export function QuizOption({ label, selected = false, onPress }: QuizOptionProps) {
+export function QuizOption({ label, selected = false, onPress, icon }: QuizOptionProps) {
   return (
     <Pressable
       onPress={onPress}
@@ -21,6 +24,7 @@ export function QuizOption({ label, selected = false, onPress }: QuizOptionProps
         pressed && styles.optionPressed,
       ]}
     >
+      {icon ? <View style={styles.icon}>{icon}</View> : null}
       <Text style={[styles.label, selected && styles.labelSelected]}>{label}</Text>
     </Pressable>
   );
@@ -28,6 +32,8 @@ export function QuizOption({ label, selected = false, onPress }: QuizOptionProps
 
 const styles = StyleSheet.create({
   option: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: colors.card,
     borderRadius: radius.card,
     borderWidth: 1,
@@ -42,7 +48,11 @@ const styles = StyleSheet.create({
   optionPressed: {
     opacity: 0.85,
   },
+  icon: {
+    marginRight: 14,
+  },
   label: {
+    flex: 1,
     color: colors.text,
     fontSize: 15,
     fontWeight: fontWeight.regular,
