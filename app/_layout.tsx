@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { initPurchases } from '@/lib/purchases';
@@ -13,11 +14,25 @@ import { colors } from '@/lib/theme';
  * L'URL « / » résout vers le premier écran disponible du Stack.
  */
 export default function RootLayout() {
+  const hasHydrated = useOnboardingStore((state) => state.hasHydrated);
   const onboardingDone = useOnboardingStore((state) => state.onboardingDone);
 
   useEffect(() => {
     initPurchases();
   }, []);
+
+  // Tant que le store n'est pas rechargé depuis le disque, écran neutre :
+  // évite le flash qui renverrait un utilisateur déjà onboardé vers le quiz.
+  if (!hasHydrated) {
+    return (
+      <SafeAreaProvider>
+        <StatusBar style="light" />
+        <View style={styles.loading}>
+          <ActivityIndicator color={colors.accentLight} />
+        </View>
+      </SafeAreaProvider>
+    );
+  }
 
   return (
     <SafeAreaProvider>
@@ -42,3 +57,12 @@ export default function RootLayout() {
     </SafeAreaProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  loading: {
+    flex: 1,
+    backgroundColor: colors.bg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
