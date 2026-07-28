@@ -62,9 +62,10 @@ export async function getOfferings(): Promise<PurchasesOffering | null> {
 /** Lance l'achat. true si l'entitlement « pro » est actif à l'issue. */
 export async function purchasePackage(pkg: PurchasesPackage | null): Promise<boolean> {
   if (!configured) {
-    // Clés absentes (Expo Go / préview) : achat simulé en dev pour
-    // tester le funnel de bout en bout. Jamais en production.
-    return __DEV__;
+    // Clés absentes (Expo Go / préview) : achat simulé en dev — ou si
+    // EXPO_PUBLIC_FAKE_PRO=1 (préview web du funnel) — pour tester de
+    // bout en bout. Jamais actif dans un build de production réel.
+    return __DEV__ || process.env.EXPO_PUBLIC_FAKE_PRO === '1';
   }
   if (!pkg) return false;
   try {

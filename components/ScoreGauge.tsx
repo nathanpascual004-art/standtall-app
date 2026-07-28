@@ -8,6 +8,8 @@ type ScoreGaugeProps = {
   value: number;
   label?: string;
   size?: number;
+  /** Suffixe affiché après la valeur (ex. « % »). */
+  suffix?: string;
 };
 
 const STROKE = 10;
@@ -25,13 +27,16 @@ function arcPath(cx: number, cy: number, r: number, endAngle: number) {
 }
 
 /** Jauge semi-circulaire du score de posture (0–100). */
-export function ScoreGauge({ value, label, size = 180 }: ScoreGaugeProps) {
+export function ScoreGauge({ value, label, size = 180, suffix = '' }: ScoreGaugeProps) {
   const clamped = Math.min(100, Math.max(0, value));
   const r = (size - STROKE) / 2;
   const cx = size / 2;
   const cy = size / 2;
   const height = size / 2 + STROKE / 2;
   const endAngle = 180 - (clamped / 100) * 180;
+  // Tailles de texte proportionnelles (mêmes valeurs qu'avant en size 180).
+  const valueSize = Math.round(size * 0.18);
+  const labelSize = Math.max(10, Math.round(size * 0.061));
 
   return (
     <View style={{ width: size, height }}>
@@ -54,8 +59,13 @@ export function ScoreGauge({ value, label, size = 180 }: ScoreGaugeProps) {
         )}
       </Svg>
       <View style={styles.center}>
-        <Text style={styles.value}>{Math.round(clamped)}</Text>
-        {label ? <Text style={styles.label}>{label}</Text> : null}
+        <Text style={[styles.value, { fontSize: valueSize }]}>
+          {Math.round(clamped)}
+          {suffix}
+        </Text>
+        {label ? (
+          <Text style={[styles.label, { fontSize: labelSize }]}>{label}</Text>
+        ) : null}
       </View>
     </View>
   );
@@ -73,12 +83,10 @@ const styles = StyleSheet.create({
   },
   value: {
     color: colors.text,
-    fontSize: 32,
     fontWeight: fontWeight.medium,
   },
   label: {
     color: colors.textMuted,
-    fontSize: 11,
     fontWeight: fontWeight.regular,
   },
 });

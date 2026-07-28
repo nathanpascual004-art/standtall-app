@@ -8,7 +8,7 @@ export default function ProgrammeScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <Text style={styles.title}>Programme</Text>
-      <Text style={styles.hint}>À construire.</Text>
+      <Text style={styles.hint}>Bientôt.</Text>
     </SafeAreaView>
   );
 }
