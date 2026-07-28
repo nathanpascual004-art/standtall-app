@@ -12,7 +12,7 @@ import { MOCK_PROGRAM_COMPLETION, MOCK_PROGRESS_SCORES } from '@/lib/mockProgres
 import { computePostureResult } from '@/lib/posture';
 import { SESSIONS } from '@/lib/program';
 import { todayKey, useOnboardingStore } from '@/lib/store';
-import { colors, fontWeight, radius, spacing } from '@/lib/theme';
+import { colors, fonts, radius, spacing } from '@/lib/theme';
 
 const formatCm = (value: number) => `${value.toFixed(1).replace('.', ',')} cm`;
 
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: colors.text,
     fontSize: 20,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.display,
   },
   statRow: {
     flexDirection: 'row',
@@ -179,11 +179,11 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 14,
     lineHeight: 20,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
   },
   infoValue: {
     color: colors.accentLight,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.bodyMedium,
   },
   chartCard: {
     marginTop: spacing.md,
@@ -192,19 +192,19 @@ const styles = StyleSheet.create({
   cardLabel: {
     color: colors.textMuted,
     fontSize: 11,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
   },
   percentile: {
     color: colors.textMuted,
     fontSize: 13,
     lineHeight: 19,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
     textAlign: 'center',
     marginTop: spacing.lg,
   },
   percentileValue: {
     color: colors.accentLight,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.bodyMedium,
   },
   gaugeRow: {
     flexDirection: 'row',
@@ -224,6 +224,6 @@ const styles = StyleSheet.create({
   sessionTitle: {
     color: colors.text,
     fontSize: 15,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.bodyMedium,
   },
 });

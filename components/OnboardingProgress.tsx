@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, fontWeight } from '@/lib/theme';
+import { colors, fonts } from '@/lib/theme';
 import { ProgressBar } from './ProgressBar';
 
 type OnboardingProgressProps = {
@@ -33,7 +33,7 @@ const styles = StyleSheet.create({
   label: {
     color: colors.textMuted,
     fontSize: 11,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
     fontVariant: ['tabular-nums'],
   },
 });

@@ -1,6 +1,6 @@
 /**
  * Thème global StandTall — design premium sombre.
- * Police système uniquement, poids 400 (regular) et 500 (medium).
+ * Typographie : Space Grotesk (chargée dans app/_layout.tsx).
  */
 
 export const colors = {
@@ -21,9 +21,15 @@ export const radius = {
   button: 13,
 } as const;
 
-export const fontWeight = {
-  regular: '400',
-  medium: '500',
+/**
+ * display : titres d'écran + gros chiffres (stature, kcal, scores).
+ * body : labels, descriptions, paragraphes.
+ * bodyMedium : boutons, noms d'options, valeurs mises en avant.
+ */
+export const fonts = {
+  display: 'SpaceGrotesk_700Bold',
+  body: 'SpaceGrotesk_400Regular',
+  bodyMedium: 'SpaceGrotesk_500Medium',
 } as const;
 
 export const spacing = {
@@ -35,6 +41,6 @@ export const spacing = {
   xxl: 28,
 } as const;
 
-export const theme = { colors, radius, fontWeight, spacing } as const;
+export const theme = { colors, radius, fonts, spacing } as const;
 
 export type Theme = typeof theme;

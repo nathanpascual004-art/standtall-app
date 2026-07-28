@@ -16,7 +16,7 @@ import {
   restorePurchases,
 } from '@/lib/purchases';
 import { useOnboardingStore } from '@/lib/store';
-import { colors, fontWeight, radius, spacing } from '@/lib/theme';
+import { colors, fonts, radius, spacing } from '@/lib/theme';
 
 /** Prix de fallback (affichés si getOfferings échoue — l'écran n'est jamais vide). */
 const FALLBACK_ANNUAL_PRICE = '49,99 €';
@@ -268,14 +268,14 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 26,
     lineHeight: 34,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.display,
     marginTop: spacing.lg,
   },
   subtitle: {
     color: colors.textMuted,
     fontSize: 14,
     lineHeight: 20,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
     marginTop: spacing.xs,
   },
   benefits: {
@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: colors.text,
     fontSize: 15,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
   },
   offers: {
     marginTop: spacing.xl,
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
   badgeLabel: {
     color: colors.text,
     fontSize: 10,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.bodyMedium,
   },
   offerBody: {
     flex: 1,
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
   offerName: {
     color: colors.text,
     fontSize: 16,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.bodyMedium,
   },
   trialChip: {
     borderWidth: 1,
@@ -349,23 +349,23 @@ const styles = StyleSheet.create({
   trialChipLabel: {
     color: colors.accentLight,
     fontSize: 10,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.bodyMedium,
   },
   offerDetail: {
     color: colors.textMuted,
     fontSize: 13,
     lineHeight: 18,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
   },
   offerPerWeek: {
     color: colors.accentLight,
     fontSize: 13,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.bodyMedium,
   },
   error: {
     color: colors.textMuted,
     fontSize: 13,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
     marginTop: spacing.lg,
     textAlign: 'center',
   },
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
   cancelNote: {
     color: colors.textMuted,
     fontSize: 12,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
     textAlign: 'center',
   },
   links: {
@@ -389,7 +389,7 @@ const styles = StyleSheet.create({
   link: {
     color: colors.textMuted,
     fontSize: 12,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
     textDecorationLine: 'underline',
   },
   linkSeparator: {

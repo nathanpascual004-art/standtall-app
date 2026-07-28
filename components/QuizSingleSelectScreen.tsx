@@ -7,7 +7,7 @@ import { OnboardingProgress } from '@/components/OnboardingProgress';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { QuizOption } from '@/components/QuizOption';
 import { TOTAL_ONBOARDING_STEPS, useOnboardingStore, type QuizAnswers } from '@/lib/store';
-import { colors, fontWeight, spacing } from '@/lib/theme';
+import { colors, fonts, spacing } from '@/lib/theme';
 
 type AnswerKey = keyof QuizAnswers;
 
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 26,
     lineHeight: 34,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.display,
     marginTop: spacing.xxl,
   },
   options: {

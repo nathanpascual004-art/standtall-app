@@ -20,7 +20,7 @@ import { PrimaryButton } from '@/components/PrimaryButton';
 import { ProgressBar } from '@/components/ProgressBar';
 import { analyzeMeal } from '@/lib/foodScan';
 import { useOnboardingStore, todayKey } from '@/lib/store';
-import { colors, fontWeight, radius, spacing } from '@/lib/theme';
+import { colors, fonts, radius, spacing } from '@/lib/theme';
 
 const DAYS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
 const MONTHS = [
@@ -382,12 +382,12 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontSize: 26,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.display,
   },
   date: {
     color: colors.textMuted,
     fontSize: 13,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
     marginTop: 2,
   },
   introCard: {
@@ -406,13 +406,13 @@ const styles = StyleSheet.create({
   introTitle: {
     color: colors.text,
     fontSize: 18,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.bodyMedium,
   },
   introText: {
     color: colors.textMuted,
     fontSize: 14,
     lineHeight: 20,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
   },
   todayCard: {
     marginTop: spacing.lg,
@@ -430,12 +430,12 @@ const styles = StyleSheet.create({
   macroLabel: {
     color: colors.text,
     fontSize: 13,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.bodyMedium,
   },
   macroValue: {
     color: colors.textMuted,
     fontSize: 12,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
     fontVariant: ['tabular-nums'],
   },
   secondaryRow: {
@@ -455,12 +455,12 @@ const styles = StyleSheet.create({
   scanLabel: {
     color: colors.text,
     fontSize: 16,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.bodyMedium,
   },
   error: {
     color: colors.textMuted,
     fontSize: 13,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
     textAlign: 'center',
     marginTop: spacing.sm,
   },
@@ -472,12 +472,12 @@ const styles = StyleSheet.create({
   cardLabel: {
     color: colors.textMuted,
     fontSize: 11,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
   },
   nameInput: {
     color: colors.text,
     fontSize: 16,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.bodyMedium,
     backgroundColor: colors.bg,
     borderRadius: radius.button,
     borderWidth: 1,
@@ -496,12 +496,12 @@ const styles = StyleSheet.create({
   fieldLabel: {
     color: colors.textMuted,
     fontSize: 11,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
   },
   fieldInput: {
     color: colors.text,
     fontSize: 15,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.bodyMedium,
     backgroundColor: colors.bg,
     borderRadius: radius.button,
     borderWidth: 1,
@@ -514,7 +514,7 @@ const styles = StyleSheet.create({
   confidence: {
     color: colors.textMuted,
     fontSize: 12,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
   },
   cancel: {
     alignItems: 'center',
@@ -523,18 +523,18 @@ const styles = StyleSheet.create({
   cancelLabel: {
     color: colors.textMuted,
     fontSize: 14,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
   },
   sectionLabel: {
     color: colors.textMuted,
     fontSize: 11,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
     marginTop: spacing.xl,
   },
   empty: {
     color: colors.textMuted,
     fontSize: 14,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
     marginTop: spacing.sm,
   },
   mealList: {
@@ -550,12 +550,12 @@ const styles = StyleSheet.create({
   mealName: {
     color: colors.text,
     fontSize: 15,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.bodyMedium,
   },
   mealMacros: {
     color: colors.textMuted,
     fontSize: 12,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
     marginTop: 2,
     fontVariant: ['tabular-nums'],
   },
@@ -563,7 +563,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 11,
     lineHeight: 16,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
     textAlign: 'center',
     marginTop: spacing.xl,
   },

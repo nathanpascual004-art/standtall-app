@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { OnboardingProgress } from '@/components/OnboardingProgress';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { useOnboardingStore } from '@/lib/store';
-import { colors, fontWeight, radius, spacing } from '@/lib/theme';
+import { colors, fonts, radius, spacing } from '@/lib/theme';
 
 const MIN_KG = 30;
 const MAX_KG = 250;
@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 26,
     lineHeight: 34,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.display,
     marginTop: spacing.xxl,
   },
   inputRow: {
@@ -100,13 +100,13 @@ const styles = StyleSheet.create({
     flex: 1,
     color: colors.text,
     fontSize: 24,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.bodyMedium,
     paddingVertical: 18,
   },
   unit: {
     color: colors.textMuted,
     fontSize: 16,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
   },
   footer: {
     flex: 1,

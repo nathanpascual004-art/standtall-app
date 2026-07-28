@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
-import { colors, fontWeight } from '@/lib/theme';
+import { colors, fonts } from '@/lib/theme';
 
 type ScoreGaugeProps = {
   /** Score entre 0 et 100. */
@@ -83,10 +83,10 @@ const styles = StyleSheet.create({
   },
   value: {
     color: colors.text,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.display,
   },
   label: {
     color: colors.textMuted,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
   },
 });

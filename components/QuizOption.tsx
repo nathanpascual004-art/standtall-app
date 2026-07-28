@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, fontWeight, radius } from '@/lib/theme';
+import { colors, fonts, radius } from '@/lib/theme';
 
 type QuizOptionProps = {
   label: string;
@@ -55,9 +55,9 @@ const styles = StyleSheet.create({
     flex: 1,
     color: colors.text,
     fontSize: 15,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
   },
   labelSelected: {
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.bodyMedium,
   },
 });

@@ -10,7 +10,7 @@ import { ScoreGauge } from '@/components/ScoreGauge';
 import { StatCard } from '@/components/StatCard';
 import { computePostureResult } from '@/lib/posture';
 import { TOTAL_ONBOARDING_STEPS, useOnboardingStore } from '@/lib/store';
-import { colors, fontWeight, spacing } from '@/lib/theme';
+import { colors, fonts, spacing } from '@/lib/theme';
 
 const formatCm = (value: number) => `${value.toFixed(1).replace('.', ',')} cm`;
 
@@ -130,12 +130,12 @@ const styles = StyleSheet.create({
   kicker: {
     color: colors.textMuted,
     fontSize: 13,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
   },
   headline: {
     color: colors.text,
     fontSize: 19,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.display,
   },
   statRow: {
     flexDirection: 'row',
@@ -155,12 +155,12 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 13,
     lineHeight: 19,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
     textAlign: 'center',
   },
   percentileValue: {
     color: colors.accentLight,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.bodyMedium,
   },
   teaserCard: {
     marginTop: spacing.md,
@@ -176,14 +176,14 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 15,
     lineHeight: 22,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
   },
   teaserTitle: {
     flex: 1,
     color: colors.text,
     fontSize: 15,
     lineHeight: 22,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.bodyMedium,
   },
   programLines: {
     marginTop: spacing.sm,
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
   // Flou « réel » sans dépendance : texte transparent + ombre rayon 7.
   blurredInline: {
     color: 'transparent',
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.bodyMedium,
     textShadowColor: 'rgba(238, 242, 247, 0.9)',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 7,
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
   blurredLine: {
     color: 'transparent',
     fontSize: 13,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
     textShadowColor: 'rgba(125, 135, 148, 0.9)',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 7,
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 13,
     lineHeight: 19,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
   },
   footer: {
     paddingTop: spacing.sm,

@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { OnboardingProgress } from '@/components/OnboardingProgress';
 import { ProgressBar } from '@/components/ProgressBar';
 import { TOTAL_ONBOARDING_STEPS } from '@/lib/store';
-import { colors, fontWeight, spacing } from '@/lib/theme';
+import { colors, fonts, spacing } from '@/lib/theme';
 
 const MESSAGES = [
   'Analyse de ta posture…',
@@ -104,11 +104,11 @@ const styles = StyleSheet.create({
   message: {
     color: colors.textMuted,
     fontSize: 15,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
   },
   messageActive: {
     color: colors.text,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.bodyMedium,
   },
   bar: {
     marginTop: spacing.sm,

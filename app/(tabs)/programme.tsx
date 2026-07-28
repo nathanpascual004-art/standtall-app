@@ -7,7 +7,7 @@ import { Card } from '@/components/Card';
 import { ProgressBar } from '@/components/ProgressBar';
 import { PROGRAM_DISCLAIMER, SESSIONS, type Session } from '@/lib/program';
 import { todayKey, useOnboardingStore } from '@/lib/store';
-import { colors, fontWeight, spacing } from '@/lib/theme';
+import { colors, fonts, spacing } from '@/lib/theme';
 
 function SessionCard({ session, doneToday }: { session: Session; doneToday: boolean }) {
   const router = useRouter();
@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontSize: 26,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.display,
   },
   list: {
     marginTop: spacing.xl,
@@ -107,18 +107,18 @@ const styles = StyleSheet.create({
   sessionTitle: {
     color: colors.text,
     fontSize: 16,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.bodyMedium,
   },
   sessionMeta: {
     color: colors.textMuted,
     fontSize: 13,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
   },
   disclaimer: {
     color: colors.textMuted,
     fontSize: 11,
     lineHeight: 16,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
     marginTop: spacing.xl,
     textAlign: 'center',
   },

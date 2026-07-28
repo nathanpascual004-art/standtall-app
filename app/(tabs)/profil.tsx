@@ -10,7 +10,7 @@ import { PRIVACY_URL, SUPPORT_EMAIL, TERMS_URL } from '@/lib/config';
 import type { ActivityLevel, NutritionGoal } from '@/lib/nutrition';
 import { restorePurchases, useEntitlement } from '@/lib/purchases';
 import { useOnboardingStore } from '@/lib/store';
-import { colors, fontWeight, spacing } from '@/lib/theme';
+import { colors, fonts, spacing } from '@/lib/theme';
 
 const GOAL_LABELS: Record<NutritionGoal, string> = {
   masse: 'Prise de masse',
@@ -242,12 +242,12 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontSize: 26,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.display,
   },
   sectionLabel: {
     color: colors.textMuted,
     fontSize: 11,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
     marginTop: spacing.xl,
     marginBottom: spacing.sm,
     textTransform: 'uppercase',
@@ -271,30 +271,30 @@ const styles = StyleSheet.create({
     flex: 1,
     color: colors.text,
     fontSize: 15,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
   },
   rowValue: {
     color: colors.textMuted,
     fontSize: 14,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
   },
   feedback: {
     color: colors.accentLight,
     fontSize: 13,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
     paddingBottom: 14,
   },
   confirmText: {
     color: colors.textMuted,
     fontSize: 13,
     lineHeight: 19,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
     paddingTop: 14,
   },
   version: {
     color: colors.textMuted,
     fontSize: 12,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
     textAlign: 'center',
     marginTop: spacing.xxl,
   },
@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 11,
     lineHeight: 16,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
     textAlign: 'center',
     marginTop: spacing.sm,
   },

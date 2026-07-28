@@ -1,3 +1,9 @@
+import {
+  SpaceGrotesk_400Regular,
+  SpaceGrotesk_500Medium,
+  SpaceGrotesk_700Bold,
+  useFonts,
+} from '@expo-google-fonts/space-grotesk';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
@@ -16,14 +22,21 @@ import { colors } from '@/lib/theme';
 export default function RootLayout() {
   const hasHydrated = useOnboardingStore((state) => state.hasHydrated);
   const onboardingDone = useOnboardingStore((state) => state.onboardingDone);
+  const [fontsLoaded, fontError] = useFonts({
+    SpaceGrotesk_400Regular,
+    SpaceGrotesk_500Medium,
+    SpaceGrotesk_700Bold,
+  });
 
   useEffect(() => {
     initPurchases();
   }, []);
 
-  // Tant que le store n'est pas rechargé depuis le disque, écran neutre :
-  // évite le flash qui renverrait un utilisateur déjà onboardé vers le quiz.
-  if (!hasHydrated) {
+  // Tant que le store n'est pas rechargé depuis le disque et que les polices
+  // ne sont pas prêtes, écran neutre : évite le flash qui renverrait un
+  // utilisateur déjà onboardé vers le quiz. En cas d'échec de chargement des
+  // polices, on affiche quand même l'app (police système en secours).
+  if (!hasHydrated || (!fontsLoaded && !fontError)) {
     return (
       <SafeAreaProvider>
         <StatusBar style="light" />

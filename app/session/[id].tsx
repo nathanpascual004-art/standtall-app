@@ -14,7 +14,7 @@ import {
   type Session,
 } from '@/lib/program';
 import { useOnboardingStore } from '@/lib/store';
-import { colors, fontWeight, radius, spacing } from '@/lib/theme';
+import { colors, fonts, radius, spacing } from '@/lib/theme';
 
 const formatClock = (sec: number) => {
   const minutes = Math.floor(sec / 60);
@@ -234,13 +234,13 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 26,
     lineHeight: 34,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.display,
     marginTop: spacing.lg,
   },
   meta: {
     color: colors.textMuted,
     fontSize: 13,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
     marginTop: spacing.xs,
   },
   exercises: {
@@ -260,18 +260,18 @@ const styles = StyleSheet.create({
     flex: 1,
     color: colors.text,
     fontSize: 15,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.bodyMedium,
   },
   exerciseDuration: {
     color: colors.accentLight,
     fontSize: 13,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.bodyMedium,
   },
   exerciseDescription: {
     color: colors.textMuted,
     fontSize: 13,
     lineHeight: 19,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
   },
   cibleChip: {
     alignSelf: 'flex-start',
@@ -283,13 +283,13 @@ const styles = StyleSheet.create({
   cibleLabel: {
     color: colors.accentLight,
     fontSize: 11,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.bodyMedium,
   },
   disclaimer: {
     color: colors.textMuted,
     fontSize: 11,
     lineHeight: 16,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
     marginTop: spacing.xl,
     textAlign: 'center',
   },
@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
   playerStep: {
     color: colors.textMuted,
     fontSize: 13,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
     fontVariant: ['tabular-nums'],
   },
   playerBody: {
@@ -316,20 +316,20 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 24,
     lineHeight: 32,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.display,
     textAlign: 'center',
   },
   playerDescription: {
     color: colors.textMuted,
     fontSize: 14,
     lineHeight: 21,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
     textAlign: 'center',
   },
   playerClock: {
     color: colors.text,
     fontSize: 48,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.display,
     fontVariant: ['tabular-nums'],
     marginTop: spacing.sm,
   },
@@ -345,13 +345,13 @@ const styles = StyleSheet.create({
   doneTitle: {
     color: colors.text,
     fontSize: 24,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.display,
   },
   doneHint: {
     color: colors.textMuted,
     fontSize: 14,
     lineHeight: 20,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
     textAlign: 'center',
   },
   footer: {

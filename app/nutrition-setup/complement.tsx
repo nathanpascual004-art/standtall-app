@@ -16,7 +16,7 @@ import { OnboardingProgress } from '@/components/OnboardingProgress';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { QuizOption } from '@/components/QuizOption';
 import { useOnboardingStore, type Gender } from '@/lib/store';
-import { colors, fontWeight, radius, spacing } from '@/lib/theme';
+import { colors, fonts, radius, spacing } from '@/lib/theme';
 
 const webNoOutline: TextStyle | null =
   Platform.OS === 'web' ? ({ outlineStyle: 'none' } as unknown as TextStyle) : null;
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 26,
     lineHeight: 34,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.display,
     marginTop: spacing.xxl,
   },
   inputRow: {
@@ -156,13 +156,13 @@ const styles = StyleSheet.create({
     flex: 1,
     color: colors.text,
     fontSize: 20,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.bodyMedium,
     paddingVertical: 16,
   },
   unit: {
     color: colors.textMuted,
     fontSize: 15,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
   },
   options: {
     marginTop: spacing.lg,

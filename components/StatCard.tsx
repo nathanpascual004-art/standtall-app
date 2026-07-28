@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View, type ViewProps } from 'react-native';
 
-import { colors, fontWeight } from '@/lib/theme';
+import { colors, fonts } from '@/lib/theme';
 import { Card } from './Card';
 
 type StatCardProps = ViewProps & {
@@ -11,7 +11,7 @@ type StatCardProps = ViewProps & {
   locked?: boolean;
 };
 
-/** Carte statistique : label muted 11px + valeur 24px/500. */
+/** Carte statistique : label muted 11px + valeur 24px display. */
 export function StatCard({ label, value, locked = false, style, ...props }: StatCardProps) {
   return (
     <Card style={[styles.card, locked && styles.cardLocked, style]} {...props}>
@@ -39,12 +39,12 @@ const styles = StyleSheet.create({
   label: {
     color: colors.textMuted,
     fontSize: 11,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
   },
   value: {
     color: colors.text,
     fontSize: 24,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.display,
   },
   // Flou « réel » sans dépendance : texte transparent + ombre portée rayon 7.
   valueBlurred: {

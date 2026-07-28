@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { OnboardingProgress } from '@/components/OnboardingProgress';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { TOTAL_ONBOARDING_STEPS } from '@/lib/store';
-import { colors, fontWeight, radius, spacing } from '@/lib/theme';
+import { colors, fonts, radius, spacing } from '@/lib/theme';
 
 /** Étape 11/14 — écran insight (pas de question). */
 export default function InsightScreen() {
@@ -61,13 +61,13 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 24,
     lineHeight: 33,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.display,
   },
   consequence: {
     color: colors.accentLight,
     fontSize: 17,
     lineHeight: 25,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
   },
   footer: {
     paddingBottom: spacing.sm,

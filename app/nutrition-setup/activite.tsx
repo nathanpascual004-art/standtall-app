@@ -8,7 +8,7 @@ import { PrimaryButton } from '@/components/PrimaryButton';
 import { QuizOption } from '@/components/QuizOption';
 import type { ActivityLevel } from '@/lib/nutrition';
 import { useOnboardingStore } from '@/lib/store';
-import { colors, fontWeight, spacing } from '@/lib/theme';
+import { colors, fonts, spacing } from '@/lib/theme';
 
 const LEVELS: { value: ActivityLevel; label: string }[] = [
   { value: 'sedentaire', label: 'Sédentaire — peu ou pas de sport' },
@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 26,
     lineHeight: 34,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.display,
     marginTop: spacing.xxl,
   },
   options: {

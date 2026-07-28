@@ -8,7 +8,7 @@ import { OnboardingProgress } from '@/components/OnboardingProgress';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { QuizOption } from '@/components/QuizOption';
 import { TOTAL_ONBOARDING_STEPS, useOnboardingStore } from '@/lib/store';
-import { colors, fontWeight, radius, spacing } from '@/lib/theme';
+import { colors, fonts, radius, spacing } from '@/lib/theme';
 
 const PICKER_OPTIONS: ImagePicker.ImagePickerOptions = {
   mediaTypes: ['images'],
@@ -90,14 +90,14 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 26,
     lineHeight: 34,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.display,
     marginTop: spacing.xxl,
   },
   subtitle: {
     color: colors.textMuted,
     fontSize: 14,
     lineHeight: 20,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
     marginTop: spacing.sm,
   },
   options: {
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
   previewLabel: {
     color: colors.accentLight,
     fontSize: 13,
-    fontWeight: fontWeight.medium,
+    fontFamily: fonts.bodyMedium,
   },
   footer: {
     flex: 1,
@@ -135,6 +135,6 @@ const styles = StyleSheet.create({
   skipLabel: {
     color: colors.textMuted,
     fontSize: 15,
-    fontWeight: fontWeight.regular,
+    fontFamily: fonts.body,
   },
 });
