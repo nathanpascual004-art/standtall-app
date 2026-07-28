@@ -20,6 +20,7 @@ app/                 Écrans (Expo Router)
   onboarding/        Quiz d'onboarding (14 étapes)
   (tabs)/            Dashboard : Stature, Nutrition, Programme, Profil
   session/[id].tsx   Détail d'une séance + lecteur étape par étape
+  nutrition-setup/   Sous-onboarding nutrition (poids, objectif, activité)
   paywall.tsx        Paywall (RevenueCat)
 components/          Composants réutilisables (Card, StatCard, ProgressBar,
                      ScoreGauge, QuizOption, PrimaryButton, OnboardingProgress)

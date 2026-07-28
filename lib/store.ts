@@ -1,5 +1,11 @@
 import { create } from 'zustand';
 
+import type {
+  MealEntry,
+  NutritionProfile,
+  NutritionTargets,
+} from './nutrition';
+
 /** Nombre total d'étapes du quiz d'onboarding. */
 export const TOTAL_ONBOARDING_STEPS = 14;
 
@@ -61,9 +67,20 @@ type OnboardingState = {
   onboardingDone: boolean;
   /** Séances complétées, par clé du jour : { "2026-07-28": ["redressement-base"] }. */
   completedSessions: Record<string, string[]>;
+  /** Réponses en cours du setup nutrition (sous-onboarding). */
+  nutritionDraft: Partial<NutritionProfile>;
+  /** Profil nutrition validé + cibles calculées une fois à la fin du setup. */
+  nutritionProfile?: NutritionProfile;
+  nutritionTargets?: NutritionTargets;
+  /** Journal des repas, par clé du jour. */
+  meals: Record<string, MealEntry[]>;
   setAnswer: <K extends keyof QuizAnswers>(key: K, value: QuizAnswers[K]) => void;
   completeOnboarding: () => void;
   completeSession: (sessionId: string) => void;
+  setNutritionDraft: (patch: Partial<NutritionProfile>) => void;
+  setNutritionProfile: (profile: NutritionProfile, targets: NutritionTargets) => void;
+  addMeal: (meal: Omit<MealEntry, 'id'>) => void;
+  removeMeal: (mealId: string) => void;
   reset: () => void;
 };
 
@@ -71,6 +88,8 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
   answers: {},
   onboardingDone: false,
   completedSessions: {},
+  nutritionDraft: {},
+  meals: {},
   setAnswer: (key, value) =>
     set((state) => ({ answers: { ...state.answers, [key]: value } })),
   completeOnboarding: () => set({ onboardingDone: true }),
@@ -86,5 +105,34 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
         },
       };
     }),
-  reset: () => set({ answers: {}, onboardingDone: false, completedSessions: {} }),
+  setNutritionDraft: (patch) =>
+    set((state) => ({ nutritionDraft: { ...state.nutritionDraft, ...patch } })),
+  setNutritionProfile: (profile, targets) =>
+    set({ nutritionProfile: profile, nutritionTargets: targets, nutritionDraft: {} }),
+  addMeal: (meal) =>
+    set((state) => {
+      const day = todayKey();
+      const entry: MealEntry = { ...meal, id: `${day}-${Date.now().toString(36)}` };
+      return { meals: { ...state.meals, [day]: [...(state.meals[day] ?? []), entry] } };
+    }),
+  removeMeal: (mealId) =>
+    set((state) => {
+      const day = todayKey();
+      return {
+        meals: {
+          ...state.meals,
+          [day]: (state.meals[day] ?? []).filter((meal) => meal.id !== mealId),
+        },
+      };
+    }),
+  reset: () =>
+    set({
+      answers: {},
+      onboardingDone: false,
+      completedSessions: {},
+      nutritionDraft: {},
+      nutritionProfile: undefined,
+      nutritionTargets: undefined,
+      meals: {},
+    }),
 }));
