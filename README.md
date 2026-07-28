@@ -19,10 +19,11 @@ npm run typecheck  # vérification TypeScript
 app/                 Écrans (Expo Router)
   onboarding/        Quiz d'onboarding (14 étapes)
   (tabs)/            Dashboard : Stature, Nutrition, Programme, Profil
-  paywall/           Paywall
+  paywall.tsx        Paywall (RevenueCat)
 components/          Composants réutilisables (Card, StatCard, ProgressBar,
                      ScoreGauge, QuizOption, PrimaryButton, OnboardingProgress)
-lib/                 Thème, store zustand, calcul posture
+lib/                 Thème, store zustand, calcul posture, achats (RevenueCat),
+                     config (clés API + liens légaux à remplir)
 assets/              Icônes & images
 ```
 

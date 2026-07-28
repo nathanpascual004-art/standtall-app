@@ -1,7 +1,9 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { initPurchases } from '@/lib/purchases';
 import { useOnboardingStore } from '@/lib/store';
 import { colors } from '@/lib/theme';
 
@@ -12,6 +14,10 @@ import { colors } from '@/lib/theme';
  */
 export default function RootLayout() {
   const onboardingDone = useOnboardingStore((state) => state.onboardingDone);
+
+  useEffect(() => {
+    initPurchases();
+  }, []);
 
   return (
     <SafeAreaProvider>
