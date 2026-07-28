@@ -12,6 +12,8 @@ export const colors = {
   text: '#eef2f7',
   textMuted: '#7d8794',
   border: '#242b36',
+  /** Actions destructives (réinitialisation…). */
+  danger: '#d05c5c',
 } as const;
 
 export const radius = {

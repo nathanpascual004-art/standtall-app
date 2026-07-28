@@ -17,6 +17,9 @@ export const REVENUECAT_ANDROID_KEY = 'REMPLACER_goog_xxxxxxxx';
  */
 export const VISION_API_KEY = 'REMPLACER_sk-ant-xxxxxxxx';
 
-/** Liens légaux affichés sur le paywall (exigés par Apple). */
+/** Liens légaux affichés sur le paywall et le profil (exigés par Apple). */
 export const TERMS_URL = 'https://standtall.app/conditions';
 export const PRIVACY_URL = 'https://standtall.app/confidentialite';
+
+/** Adresse de contact support. */
+export const SUPPORT_EMAIL = 'support@standtall.app';
