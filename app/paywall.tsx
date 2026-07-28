@@ -10,6 +10,7 @@ import { PRIVACY_URL, TERMS_URL } from '@/lib/config';
 import {
   PACKAGE_ID_ANNUAL,
   PACKAGE_ID_MONTHLY,
+  PACKAGE_ID_WEEKLY,
   getOfferings,
   purchasePackage,
   restorePurchases,
@@ -18,9 +19,10 @@ import { useOnboardingStore } from '@/lib/store';
 import { colors, fontWeight, radius, spacing } from '@/lib/theme';
 
 /** Prix de fallback (affichés si getOfferings échoue — l'écran n'est jamais vide). */
-const FALLBACK_ANNUAL_PRICE = '29,99 €';
-const FALLBACK_ANNUAL_PER_WEEK = '0,58 €';
+const FALLBACK_ANNUAL_PRICE = '49,99 €';
+const FALLBACK_ANNUAL_PER_WEEK = '0,96 €';
 const FALLBACK_MONTHLY_PRICE = '9,99 €';
+const FALLBACK_WEEKLY_PRICE = '4,99 €';
 
 const BENEFITS = [
   'Ta stature redressée exacte',
@@ -28,7 +30,7 @@ const BENEFITS = [
   'Suivi de ta progression',
 ];
 
-type Plan = 'annual' | 'monthly';
+type Plan = 'annual' | 'monthly' | 'weekly';
 
 function findPackage(
   offering: PurchasesOffering | null,
@@ -42,10 +44,26 @@ function findPackage(
       null
     );
   }
+  if (plan === 'monthly') {
+    return (
+      offering.monthly ??
+      offering.availablePackages.find((p) => p.identifier === PACKAGE_ID_MONTHLY) ??
+      null
+    );
+  }
   return (
-    offering.monthly ??
-    offering.availablePackages.find((p) => p.identifier === PACKAGE_ID_MONTHLY) ??
+    offering.weekly ??
+    offering.availablePackages.find((p) => p.identifier === PACKAGE_ID_WEEKLY) ??
     null
+  );
+}
+
+/** Petit badge « 3 jours gratuits » (annuel et hebdo). */
+function TrialChip() {
+  return (
+    <View style={styles.trialChip}>
+      <Text style={styles.trialChipLabel}>3 jours gratuits</Text>
+    </View>
   );
 }
 
@@ -71,11 +89,19 @@ export default function PaywallScreen() {
 
   const annualPkg = findPackage(offering, 'annual');
   const monthlyPkg = findPackage(offering, 'monthly');
+  const weeklyPkg = findPackage(offering, 'weekly');
 
   const annualPrice = annualPkg?.product.priceString ?? FALLBACK_ANNUAL_PRICE;
   const annualPerWeek =
     annualPkg?.product.pricePerWeekString ?? FALLBACK_ANNUAL_PER_WEEK;
   const monthlyPrice = monthlyPkg?.product.priceString ?? FALLBACK_MONTHLY_PRICE;
+  const weeklyPrice = weeklyPkg?.product.priceString ?? FALLBACK_WEEKLY_PRICE;
+
+  const selectedPackage: Record<Plan, PurchasesPackage | null> = {
+    annual: annualPkg,
+    monthly: monthlyPkg,
+    weekly: weeklyPkg,
+  };
 
   const unlock = async (ok: boolean) => {
     if (ok) {
@@ -89,7 +115,7 @@ export default function PaywallScreen() {
   const handlePurchase = async () => {
     setBusy(true);
     setError(null);
-    const ok = await purchasePackage(selected === 'annual' ? annualPkg : monthlyPkg);
+    const ok = await purchasePackage(selectedPackage[selected]);
     setBusy(false);
     await unlock(ok);
   };
@@ -149,10 +175,11 @@ export default function PaywallScreen() {
               <Text style={styles.badgeLabel}>Le plus choisi</Text>
             </View>
             <View style={styles.offerBody}>
-              <Text style={styles.offerName}>Annuel</Text>
-              <Text style={styles.offerDetail}>
-                3 jours gratuits, puis {annualPrice}/an
-              </Text>
+              <View style={styles.offerNameRow}>
+                <Text style={styles.offerName}>Annuel</Text>
+                <TrialChip />
+              </View>
+              <Text style={styles.offerDetail}>puis {annualPrice}/an</Text>
             </View>
             <Text style={styles.offerPerWeek}>{annualPerWeek}/sem</Text>
           </Pressable>
@@ -166,6 +193,21 @@ export default function PaywallScreen() {
             <View style={styles.offerBody}>
               <Text style={styles.offerName}>Mensuel</Text>
               <Text style={styles.offerDetail}>{monthlyPrice}/mois</Text>
+            </View>
+          </Pressable>
+
+          <Pressable
+            onPress={() => setSelected('weekly')}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: selected === 'weekly' }}
+            style={[styles.offer, selected === 'weekly' && styles.offerSelected]}
+          >
+            <View style={styles.offerBody}>
+              <View style={styles.offerNameRow}>
+                <Text style={styles.offerName}>Hebdo</Text>
+                <TrialChip />
+              </View>
+              <Text style={styles.offerDetail}>puis {weeklyPrice}/sem</Text>
             </View>
           </Pressable>
         </View>
@@ -287,9 +329,26 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 2,
   },
+  offerNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   offerName: {
     color: colors.text,
     fontSize: 16,
+    fontWeight: fontWeight.medium,
+  },
+  trialChip: {
+    borderWidth: 1,
+    borderColor: colors.accent,
+    borderRadius: 999,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+  },
+  trialChipLabel: {
+    color: colors.accentLight,
+    fontSize: 10,
     fontWeight: fontWeight.medium,
   },
   offerDetail: {

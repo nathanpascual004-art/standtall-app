@@ -23,6 +23,7 @@ export const ENTITLEMENT_PRO = 'pro';
 /** Identifiants des packages attendus dans l'offering courant. */
 export const PACKAGE_ID_ANNUAL = '$rc_annual';
 export const PACKAGE_ID_MONTHLY = '$rc_monthly';
+export const PACKAGE_ID_WEEKLY = '$rc_weekly';
 
 const PLACEHOLDER_PREFIX = 'REMPLACER';
 
