@@ -40,3 +40,8 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Supabase CLI (généré par supabase link/init — jamais versionné)
+supabase/.temp/
+supabase/.branches/
+.env
