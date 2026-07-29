@@ -72,6 +72,13 @@ export async function analyzeMeal(
   imageBase64: string,
   mediaType: 'image/jpeg' | 'image/png' = 'image/jpeg',
 ): Promise<MealScanResult | null> {
+  // Mode test explicite : repas mocké même si le backend est configuré
+  // (utilisé par la préview web automatisée — jamais défini en production).
+  if (process.env.EXPO_PUBLIC_FAKE_SCAN === '1') {
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    return { ...MOCK_MEAL };
+  }
+
   const configured =
     !!SUPABASE_FUNCTION_URL &&
     !SUPABASE_FUNCTION_URL.startsWith(PLACEHOLDER_PREFIX) &&

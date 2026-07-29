@@ -19,7 +19,7 @@ export const REVENUECAT_ANDROID_KEY = 'REMPLACER_goog_xxxxxxxx';
  */
 export const SUPABASE_FUNCTION_URL =
   'https://retpuwbgrzwqxodjuaaj.supabase.co/functions/v1/scan-meal';
-export const SUPABASE_ANON_KEY = 'REMPLACER_eyJxxxxxxxx';
+export const SUPABASE_ANON_KEY = 'sb_publishable_Zb2nnrb3P_p4mYXGh_xo0g_lGN1KBBx';
 
 /** Liens légaux affichés sur le paywall et le profil (exigés par Apple). */
 export const TERMS_URL = 'https://standtall.app/conditions';
