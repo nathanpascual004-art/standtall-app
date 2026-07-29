@@ -8,7 +8,6 @@ import { PrimaryButton } from '@/components/PrimaryButton';
 import { ProgressChart } from '@/components/ProgressChart';
 import { ScoreGauge } from '@/components/ScoreGauge';
 import { StatCard } from '@/components/StatCard';
-import { MOCK_PROGRAM_COMPLETION, MOCK_PROGRESS_SCORES } from '@/lib/mockProgress';
 import { computePostureResult } from '@/lib/posture';
 import { SESSIONS } from '@/lib/program';
 import { todayKey, useOnboardingStore } from '@/lib/store';
@@ -22,11 +21,23 @@ export default function StatureScreen() {
   const answers = useOnboardingStore((state) => state.answers);
   const completedSessions = useOnboardingStore((state) => state.completedSessions);
   const result = computePostureResult(answers);
-  const programCompletion = Math.round(MOCK_PROGRAM_COMPLETION * 100);
 
   const doneToday = completedSessions[todayKey()] ?? [];
   const nextSession =
     SESSIONS.find((session) => !doneToday.includes(session.id)) ?? SESSIONS[0];
+
+  // % du programme du jour réellement complété (séances faites aujourd'hui).
+  const programCompletion = Math.round((doneToday.length / SESSIONS.length) * 100);
+
+  // Progression réelle : point de départ = score actuel, puis un point par
+  // séance complétée (toutes journées confondues), +1 pt plafonné à 100.
+  const totalDone = Object.values(completedSessions).reduce(
+    (sum, ids) => sum + ids.length,
+    0,
+  );
+  const progressScores = Array.from({ length: totalDone + 1 }, (_, i) =>
+    Math.min(100, result.postureScore + i),
+  );
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -77,7 +88,15 @@ export default function StatureScreen() {
 
         <Card style={styles.chartCard}>
           <Text style={styles.cardLabel}>Progression posture</Text>
-          <ProgressChart data={MOCK_PROGRESS_SCORES} />
+          {totalDone >= 2 ? (
+            <ProgressChart data={progressScores} />
+          ) : (
+            <View style={styles.chartEmpty}>
+              <Text style={styles.chartEmptyText}>
+                Complète tes séances pour voir ta progression
+              </Text>
+            </View>
+          )}
         </Card>
 
         <Text style={styles.percentile}>
@@ -188,6 +207,20 @@ const styles = StyleSheet.create({
   chartCard: {
     marginTop: spacing.md,
     gap: spacing.sm,
+  },
+  // État vide : même hauteur que la courbe pour un layout stable.
+  chartEmpty: {
+    height: 120,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
+  },
+  chartEmptyText: {
+    color: colors.textMuted,
+    fontSize: 13,
+    lineHeight: 19,
+    fontFamily: fonts.body,
+    textAlign: 'center',
   },
   cardLabel: {
     color: colors.textMuted,
