@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Card } from '@/components/Card';
@@ -12,12 +12,14 @@ import { computePostureResult } from '@/lib/posture';
 import { TOTAL_ONBOARDING_STEPS, useOnboardingStore } from '@/lib/store';
 import { colors, fonts, spacing } from '@/lib/theme';
 
-const formatCm = (value: number) => `${value.toFixed(1).replace('.', ',')} cm`;
-
 /**
  * Étape 14/14 — résultat / reveal verrouillé.
  * Gratuit (preuve de réel) : score + level + percentile.
  * Verrouillé : stature redressée exacte, cm récupérables, programme.
+ *
+ * IMPORTANT : les valeurs verrouillées ne sont JAMAIS rendues — on affiche
+ * des masques (« •••,• cm »). Un flou seul reste lisible sur grand écran.
+ * Chaque bloc verrouillé est tappable et mène au paywall.
  */
 export default function ResultScreen() {
   const router = useRouter();
@@ -44,12 +46,14 @@ export default function ResultScreen() {
             value={`${answers.heightCm ?? '—'} cm`}
             style={styles.statCard}
           />
-          <StatCard
-            label="Bien redressé"
-            value={formatCm(result.correctedHeightCm)}
-            locked
-            style={styles.statCard}
-          />
+          <Pressable
+            onPress={() => router.push('/paywall')}
+            accessibilityRole="button"
+            accessibilityLabel="Débloquer la stature redressée"
+            style={({ pressed }) => [styles.statCard, pressed && styles.pressed]}
+          >
+            <StatCard label="Bien redressé" value="•••,• cm" locked style={styles.fill} />
+          </Pressable>
         </View>
 
         <Card style={styles.gaugeCard}>
@@ -64,30 +68,43 @@ export default function ResultScreen() {
           </Text>
         </Card>
 
-        <Card style={styles.teaserCard}>
-          <View style={styles.teaserRow}>
-            <Text style={styles.teaserText}>
-              Tu récupères{' '}
-              <Text style={styles.blurredInline}>{formatCm(result.heightLossCm)}</Text>{' '}
-              en te redressant
-            </Text>
-            <Ionicons name="lock-closed" size={16} color={colors.textMuted} />
-          </View>
-        </Card>
+        <Pressable
+          onPress={() => router.push('/paywall')}
+          accessibilityRole="button"
+          accessibilityLabel="Débloquer les centimètres récupérables"
+          style={({ pressed }) => (pressed ? styles.pressed : null)}
+        >
+          <Card style={styles.teaserCard}>
+            <View style={styles.teaserRow}>
+              <Text style={styles.teaserText}>
+                Tu récupères <Text style={styles.blurredInline}>•,• cm</Text> en
+                te redressant
+              </Text>
+              <Ionicons name="lock-closed" size={16} color={colors.textMuted} />
+            </View>
+          </Card>
+        </Pressable>
 
-        <Card style={styles.teaserCard}>
-          <View style={styles.teaserRow}>
-            <Text style={styles.teaserTitle}>
-              Ton programme d'étirements personnalisé
-            </Text>
-            <Ionicons name="lock-closed" size={16} color={colors.textMuted} />
-          </View>
-          <View style={styles.programLines}>
-            <Text style={styles.blurredLine}>Décompression colonne — 2 min</Text>
-            <Text style={styles.blurredLine}>Ouverture épaules — 3 min</Text>
-            <Text style={styles.blurredLine}>Alignement nuque — 2 min</Text>
-          </View>
-        </Card>
+        <Pressable
+          onPress={() => router.push('/paywall')}
+          accessibilityRole="button"
+          accessibilityLabel="Débloquer le programme personnalisé"
+          style={({ pressed }) => (pressed ? styles.pressed : null)}
+        >
+          <Card style={styles.teaserCard}>
+            <View style={styles.teaserRow}>
+              <Text style={styles.teaserTitle}>
+                Ton programme d'étirements personnalisé
+              </Text>
+              <Ionicons name="lock-closed" size={16} color={colors.textMuted} />
+            </View>
+            <View style={styles.programLines}>
+              <Text style={styles.blurredLine}>•••••••••••• ••••••• — • min</Text>
+              <Text style={styles.blurredLine}>••••••••• •••••••• — • min</Text>
+              <Text style={styles.blurredLine}>•••••••••• ••••• — • min</Text>
+            </View>
+          </Card>
+        </Pressable>
 
         <View style={styles.benefit}>
           <View style={styles.benefitIcon}>
@@ -144,6 +161,12 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
+  },
+  fill: {
+    flex: 1,
+  },
+  pressed: {
+    opacity: 0.85,
   },
   gaugeCard: {
     alignItems: 'center',

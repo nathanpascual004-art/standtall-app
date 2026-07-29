@@ -1,13 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View, type ViewProps } from 'react-native';
 
-import { colors, fonts } from '@/lib/theme';
+import { colors, fonts, radius } from '@/lib/theme';
 import { Card } from './Card';
 
 type StatCardProps = ViewProps & {
   label: string;
+  /**
+   * Quand `locked` est actif, passe une valeur MASQUÉE (ex. « •••,• cm »),
+   * jamais la vraie : rien de verrouillé ne doit exister dans le rendu.
+   */
   value: string | number;
-  /** Carte verrouillée : valeur floutée, bordure accent, cadenas centré. */
+  /** Carte verrouillée : masque flouté + surcouche semi-opaque + cadenas. */
   locked?: boolean;
 };
 
@@ -53,6 +57,8 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 7,
   },
+  // Surcouche semi-opaque (ton du fond) : le contenu sous le cadenas reste
+  // illisible quelle que soit la taille d'écran.
   lockOverlay: {
     position: 'absolute',
     top: 0,
@@ -61,6 +67,8 @@ const styles = StyleSheet.create({
     bottom: 0,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(10, 13, 19, 0.45)',
+    borderRadius: radius.card,
   },
   lockBadge: {
     width: 32,
