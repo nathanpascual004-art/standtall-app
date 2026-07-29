@@ -4,11 +4,17 @@
  *
  * La clé de l'API vision ne quitte JAMAIS le serveur : l'app n'embarque
  * que l'URL de la fonction et la clé anon Supabase (publique par
- * conception). Tant que l'URL ou la clé anon gardent leur préfixe
- * « REMPLACER », le scan renvoie un repas mocké réaliste en développement
- * (ou si EXPO_PUBLIC_FAKE_SCAN=1) pour tester le funnel, et null en
- * production. Les valeurs renvoyées sont des ESTIMATIONS — l'écran doit
- * toujours laisser l'utilisateur les ajuster.
+ * conception).
+ *
+ * Ordre des chemins (voir les logs [foodScan] dans la console) :
+ *   1. EXPO_PUBLIC_FAKE_SCAN=1  → repas mocké. SEUL déclencheur du mock,
+ *      toujours explicite — jamais par défaut, même en dev.
+ *   2. URL ou clé en placeholder « REMPLACER » → échec explicite (null),
+ *      le message invite à renseigner lib/config.ts.
+ *   3. Sinon → appel réel de l'Edge Function, en dev comme en prod.
+ *
+ * Les valeurs renvoyées sont des ESTIMATIONS — l'écran doit toujours
+ * laisser l'utilisateur les ajuster.
  */
 import { SUPABASE_ANON_KEY, SUPABASE_FUNCTION_URL } from './config';
 
@@ -72,27 +78,36 @@ export async function analyzeMeal(
   imageBase64: string,
   mediaType: 'image/jpeg' | 'image/png' = 'image/jpeg',
 ): Promise<MealScanResult | null> {
-  // Mode test explicite : repas mocké même si le backend est configuré
-  // (utilisé par la préview web automatisée — jamais défini en production).
+  // 1) Mock UNIQUEMENT sur demande explicite — jamais par défaut en dev.
   if (process.env.EXPO_PUBLIC_FAKE_SCAN === '1') {
+    console.log('[foodScan] MOCK — EXPO_PUBLIC_FAKE_SCAN=1 (préview sans backend)');
     await new Promise((resolve) => setTimeout(resolve, 700));
     return { ...MOCK_MEAL };
   }
 
-  const configured =
-    !!SUPABASE_FUNCTION_URL &&
-    !SUPABASE_FUNCTION_URL.startsWith(PLACEHOLDER_PREFIX) &&
-    !!SUPABASE_ANON_KEY &&
-    !SUPABASE_ANON_KEY.startsWith(PLACEHOLDER_PREFIX);
-
-  if (!configured) {
-    // Pas de backend : repas mocké en dev / préview pour tester le funnel.
-    if (__DEV__ || process.env.EXPO_PUBLIC_FAKE_SCAN === '1') {
-      await new Promise((resolve) => setTimeout(resolve, 700));
-      return { ...MOCK_MEAL };
-    }
+  // 2) Backend configuré ? Sinon, échec explicite — pas de mock silencieux.
+  const urlOk =
+    !!SUPABASE_FUNCTION_URL && !SUPABASE_FUNCTION_URL.startsWith(PLACEHOLDER_PREFIX);
+  const keyOk =
+    !!SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.startsWith(PLACEHOLDER_PREFIX);
+  if (!urlOk || !keyOk) {
+    console.log(
+      `[foodScan] NON CONFIGURÉ (url=${urlOk ? 'ok' : 'placeholder'}, clé=${
+        keyOk ? 'ok' : 'placeholder'
+      }) → renseigne lib/config.ts. Scan refusé.`,
+    );
     return null;
   }
+
+  if (!imageBase64) {
+    console.log('[foodScan] REAL refusé — image base64 vide (le picker doit fournir base64)');
+    return null;
+  }
+
+  // 3) Appel réel de l'Edge Function — en dev comme en prod.
+  console.log(
+    `[foodScan] REAL fetch → ${SUPABASE_FUNCTION_URL} (${mediaType}, ${imageBase64.length} car. base64)`,
+  );
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -109,9 +124,22 @@ export async function analyzeMeal(
       body: JSON.stringify({ imageBase64, mediaType }),
     });
 
-    if (!response.ok) return null;
-    return validateMeal(await response.json());
-  } catch {
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      console.log(`[foodScan] REAL error → HTTP ${response.status} ${body.slice(0, 200)}`);
+      return null;
+    }
+
+    const meal = validateMeal(await response.json());
+    if (meal) {
+      console.log(`[foodScan] REAL ok → « ${meal.nom} », ${meal.calories} kcal`);
+    } else {
+      console.log('[foodScan] REAL error → réponse 200 mais JSON inexploitable (validateMeal)');
+    }
+    return meal;
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    console.log(`[foodScan] REAL error → ${reason} (réseau coupé ou timeout 30 s)`);
     return null;
   } finally {
     clearTimeout(timeout);
