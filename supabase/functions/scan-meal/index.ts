@@ -9,10 +9,12 @@
 // Renvoie : { nom, calories, proteinesG, glucidesG, lipidesG, confiance }
 //           (même schéma que lib/foodScan.ts côté app)
 
+// Renvoyés sur TOUTES les réponses (succès, erreurs, preflight) via json().
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Max-Age': '86400',
 };
 
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
@@ -77,10 +79,7 @@ function parseMeal(raw: string) {
   }
 }
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: CORS_HEADERS });
-  }
+async function handle(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
     return json({ error: 'method_not_allowed' }, 405);
   }
@@ -157,5 +156,18 @@ Deno.serve(async (req) => {
     return json(meal);
   } catch {
     return json({ error: 'vision_api_unreachable' }, 502);
+  }
+}
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: CORS_HEADERS });
+  }
+  try {
+    return await handle(req);
+  } catch {
+    // Filet de sécurité : même un crash inattendu répond avec les
+    // headers CORS — sinon le navigateur masque l'erreur réelle.
+    return json({ error: 'internal_error' }, 500);
   }
 });
