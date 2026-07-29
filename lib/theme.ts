@@ -22,14 +22,14 @@ export const radius = {
 } as const;
 
 /**
- * display : titres d'écran + gros chiffres (stature, kcal, scores).
+ * display : titres d'écran + gros chiffres (stature, kcal, scores, prix).
+ * medium : sous-titres, boutons, valeurs mises en avant.
  * body : labels, descriptions, paragraphes.
- * bodyMedium : boutons, noms d'options, valeurs mises en avant.
  */
 export const fonts = {
   display: 'SpaceGrotesk_700Bold',
+  medium: 'SpaceGrotesk_500Medium',
   body: 'SpaceGrotesk_400Regular',
-  bodyMedium: 'SpaceGrotesk_500Medium',
 } as const;
 
 export const spacing = {

@@ -58,6 +58,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.body,
   },
   labelSelected: {
-    fontFamily: fonts.bodyMedium,
+    fontFamily: fonts.medium,
   },
 });

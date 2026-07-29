@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
   },
   infoValue: {
     color: colors.accentLight,
-    fontFamily: fonts.bodyMedium,
+    fontFamily: fonts.medium,
   },
   chartCard: {
     marginTop: spacing.md,
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
   },
   percentileValue: {
     color: colors.accentLight,
-    fontFamily: fonts.bodyMedium,
+    fontFamily: fonts.medium,
   },
   gaugeRow: {
     flexDirection: 'row',
@@ -224,6 +224,6 @@ const styles = StyleSheet.create({
   sessionTitle: {
     color: colors.text,
     fontSize: 15,
-    fontFamily: fonts.bodyMedium,
+    fontFamily: fonts.medium,
   },
 });

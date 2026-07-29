@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: colors.text,
     fontSize: 24,
-    fontFamily: fonts.bodyMedium,
+    fontFamily: fonts.medium,
     paddingVertical: 18,
   },
   unit: {

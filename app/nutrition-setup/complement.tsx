@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: colors.text,
     fontSize: 20,
-    fontFamily: fonts.bodyMedium,
+    fontFamily: fonts.medium,
     paddingVertical: 16,
   },
   unit: {

@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
   previewLabel: {
     color: colors.accentLight,
     fontSize: 13,
-    fontFamily: fonts.bodyMedium,
+    fontFamily: fonts.medium,
   },
   footer: {
     flex: 1,

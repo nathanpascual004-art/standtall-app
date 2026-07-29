@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
   },
   percentileValue: {
     color: colors.accentLight,
-    fontFamily: fonts.bodyMedium,
+    fontFamily: fonts.medium,
   },
   teaserCard: {
     marginTop: spacing.md,
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 15,
     lineHeight: 22,
-    fontFamily: fonts.bodyMedium,
+    fontFamily: fonts.medium,
   },
   programLines: {
     marginTop: spacing.sm,
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
   // Flou « réel » sans dépendance : texte transparent + ombre rayon 7.
   blurredInline: {
     color: 'transparent',
-    fontFamily: fonts.bodyMedium,
+    fontFamily: fonts.medium,
     textShadowColor: 'rgba(238, 242, 247, 0.9)',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 7,

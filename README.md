@@ -33,8 +33,9 @@ assets/              Icônes & images
 ## Conventions
 
 - Thème centralisé dans `lib/theme.ts` — aucune couleur en dur dans les écrans.
-- Typographie : Space Grotesk (`fonts.display` 700 pour titres et gros
-  chiffres, `fonts.body` 400 / `fonts.bodyMedium` 500 pour le reste).
+- Typographie : Space Grotesk (`fonts.display` 700 pour titres, gros
+  chiffres et prix, `fonts.medium` 500 pour sous-titres et boutons,
+  `fonts.body` 400 pour le reste).
 - Radius : 14 (cartes), 13 (boutons).
 - État du quiz dans `lib/store.ts` (zustand) — une clé de `QuizAnswers` par écran.
 - Imports via l'alias `@/` (racine du projet).

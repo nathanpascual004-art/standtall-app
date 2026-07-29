@@ -179,7 +179,9 @@ export default function PaywallScreen() {
                 <Text style={styles.offerName}>Annuel</Text>
                 <TrialChip />
               </View>
-              <Text style={styles.offerDetail}>puis {annualPrice}/an</Text>
+              <Text style={styles.offerDetail}>
+                puis <Text style={styles.priceInline}>{annualPrice}</Text>/an
+              </Text>
             </View>
             <Text style={styles.offerPerWeek}>{annualPerWeek}/sem</Text>
           </Pressable>
@@ -192,7 +194,9 @@ export default function PaywallScreen() {
           >
             <View style={styles.offerBody}>
               <Text style={styles.offerName}>Mensuel</Text>
-              <Text style={styles.offerDetail}>{monthlyPrice}/mois</Text>
+              <Text style={styles.offerDetail}>
+                <Text style={styles.priceInline}>{monthlyPrice}</Text>/mois
+              </Text>
             </View>
           </Pressable>
 
@@ -207,7 +211,9 @@ export default function PaywallScreen() {
                 <Text style={styles.offerName}>Hebdo</Text>
                 <TrialChip />
               </View>
-              <Text style={styles.offerDetail}>puis {weeklyPrice}/sem</Text>
+              <Text style={styles.offerDetail}>
+                puis <Text style={styles.priceInline}>{weeklyPrice}</Text>/sem
+              </Text>
             </View>
           </Pressable>
         </View>
@@ -323,7 +329,7 @@ const styles = StyleSheet.create({
   badgeLabel: {
     color: colors.text,
     fontSize: 10,
-    fontFamily: fonts.bodyMedium,
+    fontFamily: fonts.medium,
   },
   offerBody: {
     flex: 1,
@@ -337,7 +343,7 @@ const styles = StyleSheet.create({
   offerName: {
     color: colors.text,
     fontSize: 16,
-    fontFamily: fonts.bodyMedium,
+    fontFamily: fonts.medium,
   },
   trialChip: {
     borderWidth: 1,
@@ -349,7 +355,7 @@ const styles = StyleSheet.create({
   trialChipLabel: {
     color: colors.accentLight,
     fontSize: 10,
-    fontFamily: fonts.bodyMedium,
+    fontFamily: fonts.medium,
   },
   offerDetail: {
     color: colors.textMuted,
@@ -357,10 +363,14 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     fontFamily: fonts.body,
   },
+  // Valeur du prix en display — même taille et même couleur que la ligne.
+  priceInline: {
+    fontFamily: fonts.display,
+  },
   offerPerWeek: {
     color: colors.accentLight,
     fontSize: 13,
-    fontFamily: fonts.bodyMedium,
+    fontFamily: fonts.display,
   },
   error: {
     color: colors.textMuted,

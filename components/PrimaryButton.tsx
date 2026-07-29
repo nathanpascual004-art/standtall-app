@@ -51,6 +51,6 @@ const styles = StyleSheet.create({
   label: {
     color: colors.text,
     fontSize: 16,
-    fontFamily: fonts.bodyMedium,
+    fontFamily: fonts.medium,
   },
 });

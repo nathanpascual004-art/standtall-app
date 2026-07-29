@@ -406,7 +406,7 @@ const styles = StyleSheet.create({
   introTitle: {
     color: colors.text,
     fontSize: 18,
-    fontFamily: fonts.bodyMedium,
+    fontFamily: fonts.medium,
   },
   introText: {
     color: colors.textMuted,
@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
   macroLabel: {
     color: colors.text,
     fontSize: 13,
-    fontFamily: fonts.bodyMedium,
+    fontFamily: fonts.medium,
   },
   macroValue: {
     color: colors.textMuted,
@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
   scanLabel: {
     color: colors.text,
     fontSize: 16,
-    fontFamily: fonts.bodyMedium,
+    fontFamily: fonts.medium,
   },
   error: {
     color: colors.textMuted,
@@ -477,7 +477,7 @@ const styles = StyleSheet.create({
   nameInput: {
     color: colors.text,
     fontSize: 16,
-    fontFamily: fonts.bodyMedium,
+    fontFamily: fonts.medium,
     backgroundColor: colors.bg,
     borderRadius: radius.button,
     borderWidth: 1,
@@ -501,7 +501,7 @@ const styles = StyleSheet.create({
   fieldInput: {
     color: colors.text,
     fontSize: 15,
-    fontFamily: fonts.bodyMedium,
+    fontFamily: fonts.medium,
     backgroundColor: colors.bg,
     borderRadius: radius.button,
     borderWidth: 1,
@@ -550,7 +550,7 @@ const styles = StyleSheet.create({
   mealName: {
     color: colors.text,
     fontSize: 15,
-    fontFamily: fonts.bodyMedium,
+    fontFamily: fonts.medium,
   },
   mealMacros: {
     color: colors.textMuted,

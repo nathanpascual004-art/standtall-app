@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
   sessionTitle: {
     color: colors.text,
     fontSize: 16,
-    fontFamily: fonts.bodyMedium,
+    fontFamily: fonts.medium,
   },
   sessionMeta: {
     color: colors.textMuted,

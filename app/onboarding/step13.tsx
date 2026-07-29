@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
   },
   messageActive: {
     color: colors.text,
-    fontFamily: fonts.bodyMedium,
+    fontFamily: fonts.medium,
   },
   bar: {
     marginTop: spacing.sm,

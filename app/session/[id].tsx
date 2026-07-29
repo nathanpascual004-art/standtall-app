@@ -260,12 +260,12 @@ const styles = StyleSheet.create({
     flex: 1,
     color: colors.text,
     fontSize: 15,
-    fontFamily: fonts.bodyMedium,
+    fontFamily: fonts.medium,
   },
   exerciseDuration: {
     color: colors.accentLight,
     fontSize: 13,
-    fontFamily: fonts.bodyMedium,
+    fontFamily: fonts.medium,
   },
   exerciseDescription: {
     color: colors.textMuted,
@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
   cibleLabel: {
     color: colors.accentLight,
     fontSize: 11,
-    fontFamily: fonts.bodyMedium,
+    fontFamily: fonts.medium,
   },
   disclaimer: {
     color: colors.textMuted,
