@@ -39,6 +39,10 @@ export default function StatureScreen() {
     Math.min(100, result.postureScore + i),
   );
 
+  // Score courant : dernier point de la progression (base quiz + 1 pt par
+  // séance complétée, plafonné à 100). Le reveal garde le score initial.
+  const currentScore = progressScores[progressScores.length - 1];
+
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <ScrollView
@@ -101,13 +105,13 @@ export default function StatureScreen() {
 
         <Text style={styles.percentile}>
           Meilleure posture que{' '}
-          <Text style={styles.percentileValue}>{result.postureScore}%</Text> des gens
+          <Text style={styles.percentileValue}>{currentScore}%</Text> des gens
           de ton âge
         </Text>
 
         <View style={styles.gaugeRow}>
           <Card style={styles.gaugeCard}>
-            <ScoreGauge value={result.postureScore} label="Score posture" size={110} />
+            <ScoreGauge value={currentScore} label="Score posture" size={110} />
           </Card>
           <Card style={styles.gaugeCard}>
             <ScoreGauge
