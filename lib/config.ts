@@ -18,7 +18,7 @@ export const REVENUECAT_ANDROID_KEY = 'REMPLACER_goog_xxxxxxxx';
  * renvoie un repas mocké en dev pour tester le funnel.
  */
 export const SUPABASE_FUNCTION_URL =
-  'REMPLACER_https://xxxxxxxx.supabase.co/functions/v1/scan-meal';
+  'https://retpuwbgrzwqxodjuaaj.supabase.co/functions/v1/scan-meal';
 export const SUPABASE_ANON_KEY = 'REMPLACER_eyJxxxxxxxx';
 
 /** Liens légaux affichés sur le paywall et le profil (exigés par Apple). */

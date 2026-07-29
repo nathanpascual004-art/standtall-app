@@ -4,7 +4,7 @@
  *
  * La clé de l'API vision ne quitte JAMAIS le serveur : l'app n'embarque
  * que l'URL de la fonction et la clé anon Supabase (publique par
- * conception). Tant que SUPABASE_FUNCTION_URL garde son préfixe
+ * conception). Tant que l'URL ou la clé anon gardent leur préfixe
  * « REMPLACER », le scan renvoie un repas mocké réaliste en développement
  * (ou si EXPO_PUBLIC_FAKE_SCAN=1) pour tester le funnel, et null en
  * production. Les valeurs renvoyées sont des ESTIMATIONS — l'écran doit
@@ -73,7 +73,10 @@ export async function analyzeMeal(
   mediaType: 'image/jpeg' | 'image/png' = 'image/jpeg',
 ): Promise<MealScanResult | null> {
   const configured =
-    !!SUPABASE_FUNCTION_URL && !SUPABASE_FUNCTION_URL.startsWith(PLACEHOLDER_PREFIX);
+    !!SUPABASE_FUNCTION_URL &&
+    !SUPABASE_FUNCTION_URL.startsWith(PLACEHOLDER_PREFIX) &&
+    !!SUPABASE_ANON_KEY &&
+    !SUPABASE_ANON_KEY.startsWith(PLACEHOLDER_PREFIX);
 
   if (!configured) {
     // Pas de backend : repas mocké en dev / préview pour tester le funnel.
