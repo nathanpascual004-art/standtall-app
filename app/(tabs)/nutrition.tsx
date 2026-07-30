@@ -20,8 +20,13 @@ import { Mascot } from '@/components/Mascot';
 import { PressableScale } from '@/components/PressableScale';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { SectionLabel } from '@/components/SectionLabel';
-import { analyzeMeal } from '@/lib/foodScan';
-import { useOnboardingStore, todayKey } from '@/lib/store';
+import {
+  analyzeMeal,
+  computeScanTotals,
+  type MealScanResult,
+  type ScanItem,
+} from '@/lib/foodScan';
+import { useOnboardingStore, todayKey, type SavedMeal } from '@/lib/store';
 import {
   borderWidth,
   color,
@@ -49,6 +54,14 @@ const SCAN_IMAGE_HEIGHT = 120;
 const MEAL_THUMB_SIZE = 44;
 const MEAL_THUMB_RADIUS = 9;
 const MASCOT_SIZE = 80;
+/** Layout local : icônes d'action (journal, retrait d'ingrédient). */
+const ACTION_ICON_SIZE = 18;
+/** Layout local : icône étoile des chips favoris. */
+const CHIP_ICON_SIZE = 13;
+/** Layout local : largeur de l'input grammes (4 chiffres max). */
+const GRAMS_INPUT_WIDTH = 52;
+/** Nombre max de repas récents proposés dans la rangée « Réutiliser ». */
+const MAX_RECENT_MEALS = 6;
 
 /**
  * Heure du repas, décodée de l'id (`AAAA-MM-JJ-<timestamp base36>`) —
@@ -74,13 +87,18 @@ const SCAN_PICKER_OPTIONS: ImagePicker.ImagePickerOptions = {
   base64: true,
 };
 
+/** Ingrédient éditable du brouillon — `base` garde l'item d'origine pour les ratios. */
+type DraftItem = {
+  name: string;
+  grams: string;
+  base: ScanItem;
+};
+
 type DraftMeal = {
   nom: string;
-  calories: string;
-  proteinesG: string;
-  glucidesG: string;
-  lipidesG: string;
+  items: DraftItem[];
   confiance: number;
+  source: MealScanResult['source'];
 };
 
 const toInt = (raw: string) => {
@@ -88,27 +106,23 @@ const toInt = (raw: string) => {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
 };
 
-function MacroField({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <View style={styles.field}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      <TextInput
-        style={[styles.fieldInput, webNoOutline]}
-        value={value}
-        onChangeText={(text) => onChange(text.replace(/[^0-9]/g, '').slice(0, 4))}
-        keyboardType="number-pad"
-      />
-    </View>
-  );
-}
+/** Macros d'un item affiché = macros d'origine × (grammes saisis / grammes d'origine). */
+const scaleDraftItem = (item: DraftItem): ScanItem => {
+  const grams = toInt(item.grams);
+  const ratio = item.base.grams > 0 ? grams / item.base.grams : 0;
+  return {
+    ...item.base,
+    name: item.name,
+    grams,
+    kcal: item.base.kcal * ratio,
+    protein: item.base.protein * ratio,
+    carb: item.base.carb * ratio,
+    fat: item.base.fat * ratio,
+  };
+};
+
+const macroLine = (kcal: number, protein: number, carb: number, fat: number) =>
+  `${Math.round(kcal)} kcal · P ${Math.round(protein)} · G ${Math.round(carb)} · L ${Math.round(fat)}`;
 
 /** Onglet Nutrition — cibles du jour, scan de repas, journal. */
 export default function NutritionScreen() {
@@ -118,10 +132,15 @@ export default function NutritionScreen() {
   const meals = useOnboardingStore((state) => state.meals);
   const addMeal = useOnboardingStore((state) => state.addMeal);
   const removeMeal = useOnboardingStore((state) => state.removeMeal);
+  const favoriteMeals = useOnboardingStore((state) => state.favoriteMeals);
+  const toggleFavoriteMeal = useOnboardingStore((state) => state.toggleFavoriteMeal);
 
   const [scanning, setScanning] = useState(false);
   const [draft, setDraft] = useState<DraftMeal | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [userHint, setUserHint] = useState('');
+  const [barcodeOpen, setBarcodeOpen] = useState(false);
+  const [barcode, setBarcode] = useState('');
 
   const todayMeals = meals[todayKey()] ?? [];
   const consumed = todayMeals.reduce(
@@ -133,6 +152,76 @@ export default function NutritionScreen() {
     }),
     { calories: 0, proteinesG: 0, glucidesG: 0, lipidesG: 0 },
   );
+
+  // Totaux du brouillon recalculés à CHAQUE rendu depuis les grammes saisis.
+  const draftItems = draft ? draft.items.map(scaleDraftItem) : [];
+  const draftTotals = computeScanTotals(draftItems);
+
+  const favoriteNames = new Set(favoriteMeals.map((meal) => meal.nom));
+
+  // Repas récents : toutes les clés de `meals` triées par jour décroissant,
+  // distincts par nom, hors favoris, max MAX_RECENT_MEALS.
+  const recentMeals: SavedMeal[] = [];
+  const seenNames = new Set<string>();
+  const dayKeys = Object.keys(meals).sort().reverse();
+  for (const day of dayKeys) {
+    if (recentMeals.length >= MAX_RECENT_MEALS) break;
+    const entries = meals[day] ?? [];
+    for (let i = entries.length - 1; i >= 0; i -= 1) {
+      if (recentMeals.length >= MAX_RECENT_MEALS) break;
+      const meal = entries[i];
+      if (favoriteNames.has(meal.nom) || seenNames.has(meal.nom)) continue;
+      seenNames.add(meal.nom);
+      recentMeals.push({
+        nom: meal.nom,
+        calories: meal.calories,
+        proteinesG: meal.proteinesG,
+        glucidesG: meal.glucidesG,
+        lipidesG: meal.lipidesG,
+      });
+    }
+  }
+  const reuseMeals = [
+    ...favoriteMeals.map((meal) => ({ meal, favorite: true })),
+    ...recentMeals.map((meal) => ({ meal, favorite: false })),
+  ];
+
+  const openDraft = (scan: MealScanResult) => {
+    setDraft({
+      nom: scan.dish,
+      items: scan.items.map((item) => ({
+        name: item.name,
+        grams: String(item.grams),
+        base: item,
+      })),
+      confiance: scan.overallConfidence,
+      source: scan.source,
+    });
+  };
+
+  const updateDraftItem = (
+    index: number,
+    patch: Partial<Pick<DraftItem, 'name' | 'grams'>>,
+  ) => {
+    setDraft((current) =>
+      current
+        ? {
+            ...current,
+            items: current.items.map((item, i) =>
+              i === index ? { ...item, ...patch } : item,
+            ),
+          }
+        : current,
+    );
+  };
+
+  const removeDraftItem = (index: number) => {
+    setDraft((current) =>
+      current
+        ? { ...current, items: current.items.filter((_, i) => i !== index) }
+        : current,
+    );
+  };
 
   const handleScan = async () => {
     setError(null);
@@ -166,31 +255,44 @@ export default function NutritionScreen() {
 
     setScanning(true);
     const mediaType = asset.uri.includes('png') ? 'image/png' : 'image/jpeg';
-    const scan = await analyzeMeal(base64, mediaType);
+    const scan = await analyzeMeal({
+      imageBase64: base64,
+      mediaType,
+      userHint: userHint.trim() || undefined,
+    });
     setScanning(false);
 
     if (!scan) {
       setError('Analyse indisponible pour le moment. Réessaie dans un instant.');
       return;
     }
-    setDraft({
-      nom: scan.nom,
-      calories: String(scan.calories),
-      proteinesG: String(scan.proteinesG),
-      glucidesG: String(scan.glucidesG),
-      lipidesG: String(scan.lipidesG),
-      confiance: scan.confiance,
-    });
+    openDraft(scan);
+  };
+
+  const handleBarcodeSearch = async () => {
+    const code = barcode.trim();
+    if (!code || scanning) return;
+    setError(null);
+    setScanning(true);
+    const scan = await analyzeMeal({ barcode: code });
+    setScanning(false);
+
+    if (!scan) {
+      setError('Analyse indisponible pour le moment. Réessaie dans un instant.');
+      return;
+    }
+    openDraft(scan);
   };
 
   const handleAddMeal = () => {
-    if (!draft || !draft.nom.trim()) return;
+    if (!draft || !draft.nom.trim() || draft.items.length === 0) return;
+    const totals = computeScanTotals(draft.items.map(scaleDraftItem));
     addMeal({
       nom: draft.nom.trim(),
-      calories: toInt(draft.calories),
-      proteinesG: toInt(draft.proteinesG),
-      glucidesG: toInt(draft.glucidesG),
-      lipidesG: toInt(draft.lipidesG),
+      calories: Math.round(totals.kcal),
+      proteinesG: Math.round(totals.protein),
+      glucidesG: Math.round(totals.carb),
+      lipidesG: Math.round(totals.fat),
     });
     setDraft(null);
   };
@@ -244,12 +346,46 @@ export default function NutritionScreen() {
         </Animated.View>
 
         <Animated.View entering={cascade(1)}>
+          <SectionLabel style={styles.hintLabel}>Aide l'IA (optionnel)</SectionLabel>
+          <TextInput
+            style={[styles.hintInput, webNoOutline]}
+            value={userHint}
+            onChangeText={setUserHint}
+            placeholder="ex. poulet riz ~300 g"
+            placeholderTextColor={color.textMuted}
+            accessibilityLabel="Aide l'IA"
+          />
           <PrimaryButton
             label={scanning ? 'Analyse en cours…' : 'Scanner un repas'}
             disabled={scanning}
             onPress={handleScan}
             style={styles.scanButton}
           />
+          <PrimaryButton
+            label="Code-barres"
+            variant="secondary"
+            onPress={() => setBarcodeOpen((open) => !open)}
+            style={styles.barcodeToggle}
+          />
+          {barcodeOpen ? (
+            <View style={styles.barcodeRow}>
+              <TextInput
+                style={[styles.barcodeInput, webNoOutline]}
+                value={barcode}
+                onChangeText={(text) => setBarcode(text.replace(/[^0-9]/g, ''))}
+                keyboardType="number-pad"
+                placeholder="3017624010701"
+                placeholderTextColor={color.textMuted}
+                accessibilityLabel="Code-barres EAN"
+              />
+              <PrimaryButton
+                label="Rechercher"
+                disabled={!barcode.trim() || scanning}
+                onPress={handleBarcodeSearch}
+                style={styles.barcodeSearch}
+              />
+            </View>
+          ) : null}
         </Animated.View>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -273,27 +409,62 @@ export default function NutritionScreen() {
                 placeholder="Nom du repas"
                 placeholderTextColor={color.textMuted}
               />
-              <View style={styles.fieldRow}>
-                <MacroField
-                  label="kcal"
-                  value={draft.calories}
-                  onChange={(calories) => setDraft({ ...draft, calories })}
-                />
-                <MacroField
-                  label="Prot. (g)"
-                  value={draft.proteinesG}
-                  onChange={(proteinesG) => setDraft({ ...draft, proteinesG })}
-                />
-                <MacroField
-                  label="Gluc. (g)"
-                  value={draft.glucidesG}
-                  onChange={(glucidesG) => setDraft({ ...draft, glucidesG })}
-                />
-                <MacroField
-                  label="Lip. (g)"
-                  value={draft.lipidesG}
-                  onChange={(lipidesG) => setDraft({ ...draft, lipidesG })}
-                />
+              <View style={styles.itemList}>
+                {draft.items.map((item, index) => {
+                  const scaled = draftItems[index];
+                  return (
+                    <View key={`${item.base.name}-${index}`} style={styles.itemBlock}>
+                      <View style={styles.itemRow}>
+                        <TextInput
+                          style={[styles.itemNameInput, webNoOutline]}
+                          value={item.name}
+                          onChangeText={(name) => updateDraftItem(index, { name })}
+                        />
+                        <View style={styles.gramsBox}>
+                          <TextInput
+                            style={[styles.gramsInput, webNoOutline]}
+                            value={item.grams}
+                            onChangeText={(text) =>
+                              updateDraftItem(index, {
+                                grams: text.replace(/[^0-9]/g, '').slice(0, 4),
+                              })
+                            }
+                            keyboardType="number-pad"
+                            accessibilityLabel={`Grammes de ${item.base.name}`}
+                          />
+                          <Text style={styles.gramsSuffix}>g</Text>
+                        </View>
+                        <PressableScale
+                          onPress={() => removeDraftItem(index)}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Retirer ${item.base.name}`}
+                          hitSlop={8}
+                        >
+                          <Ionicons
+                            name="close-outline"
+                            size={ACTION_ICON_SIZE}
+                            color={color.textMuted}
+                          />
+                        </PressableScale>
+                      </View>
+                      <Text style={styles.itemMacros}>
+                        {macroLine(scaled.kcal, scaled.protein, scaled.carb, scaled.fat)}
+                      </Text>
+                      <Text style={styles.itemMatch}>
+                        {item.base.matchedFood
+                          ? `≈ ${item.base.matchedFood}`
+                          : 'estimation modèle'}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+              <View style={styles.totalRow}>
+                <Text style={styles.totalKcal}>{draftTotals.kcal}</Text>
+                <Text style={styles.totalMacros}>
+                  kcal · P {Math.round(draftTotals.protein)} · G{' '}
+                  {Math.round(draftTotals.carb)} · L {Math.round(draftTotals.fat)}
+                </Text>
               </View>
               <Text style={styles.confidence}>
                 Confiance de l'estimation : {Math.round(draft.confiance * 100)} %
@@ -308,6 +479,35 @@ export default function NutritionScreen() {
           </Animated.View>
         ) : null}
 
+        {reuseMeals.length > 0 ? (
+          <Animated.View entering={cascade(2)}>
+            <SectionLabel style={styles.reuseLabel}>Réutiliser</SectionLabel>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.reuseScroll}
+              contentContainerStyle={styles.reuseRow}
+            >
+              {reuseMeals.map(({ meal, favorite }) => (
+                <PressableScale
+                  key={meal.nom}
+                  onPress={() => addMeal({ ...meal })}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Réutiliser ${meal.nom}`}
+                  style={styles.chip}
+                >
+                  {favorite ? (
+                    <Ionicons name="star" size={CHIP_ICON_SIZE} color={color.accent} />
+                  ) : null}
+                  <Text style={styles.chipText}>
+                    {meal.nom} · {meal.calories} kcal
+                  </Text>
+                </PressableScale>
+              ))}
+            </ScrollView>
+          </Animated.View>
+        ) : null}
+
         <Animated.View entering={cascade(2)}>
           <SectionLabel style={styles.journalLabel}>Repas du jour</SectionLabel>
           {todayMeals.length === 0 ? (
@@ -316,6 +516,7 @@ export default function NutritionScreen() {
             <View style={styles.mealList}>
               {todayMeals.map((meal) => {
                 const time = mealTime(meal.id);
+                const isFavorite = favoriteNames.has(meal.nom);
                 return (
                   <Card key={meal.id} style={styles.mealCard}>
                     <BrandImage
@@ -333,12 +534,36 @@ export default function NutritionScreen() {
                     </View>
                     {time ? <Text style={styles.mealTimeText}>{time}</Text> : null}
                     <PressableScale
+                      onPress={() =>
+                        toggleFavoriteMeal({
+                          nom: meal.nom,
+                          calories: meal.calories,
+                          proteinesG: meal.proteinesG,
+                          glucidesG: meal.glucidesG,
+                          lipidesG: meal.lipidesG,
+                        })
+                      }
+                      accessibilityRole="button"
+                      accessibilityLabel={`Favori ${meal.nom}`}
+                      hitSlop={8}
+                    >
+                      <Ionicons
+                        name={isFavorite ? 'star' : 'star-outline'}
+                        size={ACTION_ICON_SIZE}
+                        color={isFavorite ? color.accent : color.textMuted}
+                      />
+                    </PressableScale>
+                    <PressableScale
                       onPress={() => removeMeal(meal.id)}
                       accessibilityRole="button"
                       accessibilityLabel={`Supprimer ${meal.nom}`}
                       hitSlop={8}
                     >
-                      <Ionicons name="trash-outline" size={18} color={color.textMuted} />
+                      <Ionicons
+                        name="trash-outline"
+                        size={ACTION_ICON_SIZE}
+                        color={color.textMuted}
+                      />
                     </PressableScale>
                   </Card>
                 );
@@ -397,8 +622,43 @@ const styles = StyleSheet.create({
     marginTop: space.lg,
     padding: space.lg,
   },
+  hintLabel: {
+    marginTop: space.lg,
+  },
+  hintInput: {
+    ...type.bodyMedium,
+    backgroundColor: color.bg,
+    borderRadius: radius.tile,
+    borderWidth: borderWidth.hairline,
+    borderColor: color.border,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
+    marginTop: space.sm,
+  },
   scanButton: {
     marginTop: space.md,
+  },
+  barcodeToggle: {
+    marginTop: space.sm,
+  },
+  barcodeRow: {
+    flexDirection: 'row',
+    gap: space.sm,
+    marginTop: space.sm,
+  },
+  barcodeInput: {
+    ...type.bodyMedium,
+    flex: 1,
+    backgroundColor: color.bg,
+    borderRadius: radius.tile,
+    borderWidth: borderWidth.hairline,
+    borderColor: color.border,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
+    fontVariant: ['tabular-nums'],
+  },
+  barcodeSearch: {
+    paddingHorizontal: space.lg,
   },
   error: {
     ...type.body,
@@ -420,29 +680,92 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
     paddingVertical: space.sm,
   },
-  fieldRow: {
-    flexDirection: 'row',
-    gap: space.sm,
+  itemList: {
+    gap: space.md,
   },
-  field: {
-    flex: 1,
+  itemBlock: {
     gap: space.xs,
   },
-  fieldLabel: {
-    ...type.meta,
+  itemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
   },
-  fieldInput: {
+  itemNameInput: {
     ...type.bodyMedium,
+    flex: 1,
     backgroundColor: color.bg,
     borderRadius: radius.tile,
     borderWidth: borderWidth.hairline,
     borderColor: color.border,
     paddingHorizontal: space.sm,
     paddingVertical: space.sm,
-    textAlign: 'center',
+  },
+  gramsBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.xs,
+    backgroundColor: color.bg,
+    borderRadius: radius.tile,
+    borderWidth: borderWidth.hairline,
+    borderColor: color.border,
+    paddingHorizontal: space.sm,
+  },
+  gramsInput: {
+    ...type.bodyMedium,
+    width: GRAMS_INPUT_WIDTH,
+    paddingVertical: space.sm,
+    textAlign: 'right',
+    fontVariant: ['tabular-nums'],
+  },
+  gramsSuffix: {
+    ...type.meta,
+  },
+  itemMacros: {
+    ...type.meta,
+    fontVariant: ['tabular-nums'],
+  },
+  itemMatch: {
+    ...type.meta,
+    color: color.textMuted,
+  },
+  totalRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: space.xs,
+  },
+  totalKcal: {
+    ...type.statNumberSmall,
+    fontVariant: ['tabular-nums'],
+  },
+  totalMacros: {
+    ...type.meta,
     fontVariant: ['tabular-nums'],
   },
   confidence: {
+    ...type.meta,
+  },
+  reuseLabel: {
+    marginTop: space.xl,
+  },
+  reuseScroll: {
+    marginTop: space.sm,
+  },
+  reuseRow: {
+    gap: space.sm,
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.xs,
+    backgroundColor: color.surface,
+    borderWidth: borderWidth.hairline,
+    borderColor: color.border,
+    borderRadius: radius.pill,
+    paddingVertical: space.sm,
+    paddingHorizontal: space.md,
+  },
+  chipText: {
     ...type.meta,
   },
   journalLabel: {

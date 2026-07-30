@@ -8,6 +8,9 @@ import type {
   NutritionTargets,
 } from './nutrition';
 
+/** Repas mémorisé pour les favoris — un MealEntry sans identifiant. */
+export type SavedMeal = Omit<MealEntry, 'id'>;
+
 /** Nombre total d'étapes du quiz d'onboarding. */
 export const TOTAL_ONBOARDING_STEPS = 14;
 
@@ -78,6 +81,8 @@ type OnboardingState = {
   nutritionTargets?: NutritionTargets;
   /** Journal des repas, par clé du jour. */
   meals: Record<string, MealEntry[]>;
+  /** Repas favoris (réutilisation en 1 tap depuis l'écran Nutrition). */
+  favoriteMeals: SavedMeal[];
   setHasHydrated: (value: boolean) => void;
   setAnswer: <K extends keyof QuizAnswers>(key: K, value: QuizAnswers[K]) => void;
   completeOnboarding: () => void;
@@ -86,6 +91,8 @@ type OnboardingState = {
   setNutritionProfile: (profile: NutritionProfile, targets: NutritionTargets) => void;
   addMeal: (meal: Omit<MealEntry, 'id'>) => void;
   removeMeal: (mealId: string) => void;
+  /** Ajoute/retire un repas des favoris (identifié par son nom). */
+  toggleFavoriteMeal: (meal: SavedMeal) => void;
   reset: () => void;
 };
 
@@ -103,9 +110,10 @@ type PersistedState = Pick<
   | 'nutritionProfile'
   | 'nutritionTargets'
   | 'meals'
+  | 'favoriteMeals'
 >;
 
-const PERSIST_VERSION = 1;
+const PERSIST_VERSION = 2;
 
 /**
  * Storage no-op pour le pré-rendu statique web (Node, pas de window).
@@ -124,6 +132,7 @@ const initialState = {
   completedSessions: {},
   nutritionDraft: {},
   meals: {},
+  favoriteMeals: [] as SavedMeal[],
 } as const;
 
 export const useOnboardingStore = create<OnboardingState>()(
@@ -156,6 +165,15 @@ export const useOnboardingStore = create<OnboardingState>()(
           const entry: MealEntry = { ...meal, id: `${day}-${Date.now().toString(36)}` };
           return { meals: { ...state.meals, [day]: [...(state.meals[day] ?? []), entry] } };
         }),
+      toggleFavoriteMeal: (meal) =>
+        set((state) => {
+          const exists = state.favoriteMeals.some((f) => f.nom === meal.nom);
+          return {
+            favoriteMeals: exists
+              ? state.favoriteMeals.filter((f) => f.nom !== meal.nom)
+              : [...state.favoriteMeals, meal].slice(-12),
+          };
+        }),
       removeMeal: (mealId) =>
         set((state) => {
           const day = todayKey();
@@ -175,6 +193,7 @@ export const useOnboardingStore = create<OnboardingState>()(
           nutritionProfile: undefined,
           nutritionTargets: undefined,
           meals: {},
+          favoriteMeals: [],
         }),
     }),
     {
@@ -190,10 +209,16 @@ export const useOnboardingStore = create<OnboardingState>()(
         nutritionProfile: state.nutritionProfile,
         nutritionTargets: state.nutritionTargets,
         meals: state.meals,
+        favoriteMeals: state.favoriteMeals,
       }),
-      // Migrations futures : brancher ici sur `version` quand le schéma
-      // persisté évolue, sans casser les installs existantes.
-      migrate: (persistedState, _version) => persistedState as PersistedState,
+      // v1 → v2 : ajout des repas favoris (liste vide par défaut).
+      migrate: (persistedState, version) => {
+        const state = persistedState as PersistedState;
+        if (version < 2 && !Array.isArray(state.favoriteMeals)) {
+          state.favoriteMeals = [];
+        }
+        return state;
+      },
       onRehydrateStorage: () => () => {
         // Toujours débloquer l'app, même si la lecture disque a échoué.
         useOnboardingStore.setState({ hasHydrated: true });
