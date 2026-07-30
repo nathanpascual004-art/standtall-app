@@ -1,6 +1,6 @@
 import { PostureFigure } from '@/components/PostureFigure';
 import { QuizSingleSelectScreen } from '@/components/QuizSingleSelectScreen';
-import { colors } from '@/lib/theme';
+import { color } from '@/theme/tokens';
 
 /** Étape 6/14 — tenue spontanée (options illustrées). */
 export default function PostureTypeScreen() {
@@ -16,7 +16,7 @@ export default function PostureTypeScreen() {
           icon: (selected) => (
             <PostureFigure
               variant="droit"
-              color={selected ? colors.accentLight : colors.textMuted}
+              color={selected ? color.accent : color.textMuted}
             />
           ),
         },
@@ -26,7 +26,7 @@ export default function PostureTypeScreen() {
           icon: (selected) => (
             <PostureFigure
               variant="legerement-voute"
-              color={selected ? colors.accentLight : colors.textMuted}
+              color={selected ? color.accent : color.textMuted}
             />
           ),
         },
@@ -36,7 +36,7 @@ export default function PostureTypeScreen() {
           icon: (selected) => (
             <PostureFigure
               variant="tres-voute"
-              color={selected ? colors.accentLight : colors.textMuted}
+              color={selected ? color.accent : color.textMuted}
             />
           ),
         },

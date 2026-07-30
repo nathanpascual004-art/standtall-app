@@ -12,7 +12,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { initPurchases } from '@/lib/purchases';
 import { useOnboardingStore } from '@/lib/store';
-import { colors } from '@/lib/theme';
+import { color } from '@/theme/tokens';
 
 /**
  * Tant que l'onboarding n'est pas terminé, seul le quiz est accessible ;
@@ -41,7 +41,7 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <StatusBar style="light" />
         <View style={styles.loading}>
-          <ActivityIndicator color={colors.accentLight} />
+          <ActivityIndicator color={color.accent} />
         </View>
       </SafeAreaProvider>
     );
@@ -53,7 +53,7 @@ export default function RootLayout() {
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: colors.bg },
+          contentStyle: { backgroundColor: color.bg },
           animation: 'slide_from_right',
         }}
       >
@@ -74,7 +74,7 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   loading: {
     flex: 1,
-    backgroundColor: colors.bg,
+    backgroundColor: color.bg,
     alignItems: 'center',
     justifyContent: 'center',
   },

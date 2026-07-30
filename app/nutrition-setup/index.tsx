@@ -7,20 +7,16 @@ import {
   Text,
   TextInput,
   View,
-  type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { OnboardingProgress } from '@/components/OnboardingProgress';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { useOnboardingStore } from '@/lib/store';
-import { colors, fonts, radius, spacing } from '@/lib/theme';
+import { borderWidth, color, radius, space, type, webNoOutline } from '@/theme/tokens';
 
 const MIN_KG = 30;
 const MAX_KG = 250;
-
-const webNoOutline: TextStyle | null =
-  Platform.OS === 'web' ? ({ outlineStyle: 'none' } as unknown as TextStyle) : null;
 
 /** Setup nutrition 1/4 — poids. */
 export default function WeightScreen() {
@@ -54,7 +50,7 @@ export default function WeightScreen() {
             onChangeText={(text) => setRaw(text.replace(/[^0-9]/g, '').slice(0, 3))}
             keyboardType="number-pad"
             placeholder="72"
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor={color.textMuted}
             maxLength={3}
             autoFocus
           />
@@ -72,45 +68,39 @@ export default function WeightScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.bg,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.md,
+    backgroundColor: color.bg,
+    paddingHorizontal: space.screen,
+    paddingTop: space.md,
   },
   flex: {
     flex: 1,
   },
   title: {
-    color: colors.text,
-    fontSize: 26,
-    lineHeight: 34,
-    fontFamily: fonts.display,
-    marginTop: spacing.xxl,
+    ...type.question,
+    marginTop: space.xxl,
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.card,
+    backgroundColor: color.surface,
     borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.lg,
-    marginTop: spacing.xxl,
+    borderWidth: borderWidth.hairline,
+    borderColor: color.border,
+    paddingHorizontal: space.lg,
+    marginTop: space.xxl,
   },
   input: {
     flex: 1,
-    color: colors.text,
-    fontSize: 24,
-    fontFamily: fonts.medium,
-    paddingVertical: 18,
+    ...type.statNumberSmall,
+    fontVariant: ['tabular-nums'],
+    paddingVertical: space.lg,
   },
   unit: {
-    color: colors.textMuted,
-    fontSize: 16,
-    fontFamily: fonts.body,
+    ...type.body,
   },
   footer: {
     flex: 1,
     justifyContent: 'flex-end',
-    paddingBottom: spacing.sm,
+    paddingBottom: space.sm,
   },
 });

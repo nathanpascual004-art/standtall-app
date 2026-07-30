@@ -6,11 +6,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '@/components/Card';
 import { OnboardingProgress } from '@/components/OnboardingProgress';
 import { PrimaryButton } from '@/components/PrimaryButton';
-import { ScoreGauge } from '@/components/ScoreGauge';
 import { StatCard } from '@/components/StatCard';
+import { Toise } from '@/components/Toise';
 import { computePostureResult } from '@/lib/posture';
 import { TOTAL_ONBOARDING_STEPS, useOnboardingStore } from '@/lib/store';
-import { colors, fonts, spacing } from '@/lib/theme';
+import { color, font, radius, space, type } from '@/theme/tokens';
 
 /**
  * Étape 14/14 — résultat / reveal verrouillé.
@@ -57,9 +57,10 @@ export default function ResultScreen() {
         </View>
 
         <Card style={styles.gaugeCard}>
-          <ScoreGauge
-            value={result.postureScore}
-            label={`Score posture — ${result.level}`}
+          <Toise
+            score={result.postureScore}
+            label="Score de posture"
+            subtext={`Posture — ${result.level}`}
           />
           <Text style={styles.percentile}>
             Meilleure posture que{' '}
@@ -80,7 +81,7 @@ export default function ResultScreen() {
                 Tu récupères <Text style={styles.blurredInline}>•,• cm</Text> en
                 te redressant
               </Text>
-              <Ionicons name="lock-closed" size={16} color={colors.textMuted} />
+              <Ionicons name="lock-closed" size={16} color={color.textSecond} />
             </View>
           </Card>
         </Pressable>
@@ -96,7 +97,7 @@ export default function ResultScreen() {
               <Text style={styles.teaserTitle}>
                 Ton programme d'étirements personnalisé
               </Text>
-              <Ionicons name="lock-closed" size={16} color={colors.textMuted} />
+              <Ionicons name="lock-closed" size={16} color={color.textSecond} />
             </View>
             <View style={styles.programLines}>
               <Text style={styles.blurredLine}>•••••••••••• ••••••• — • min</Text>
@@ -108,7 +109,7 @@ export default function ResultScreen() {
 
         <View style={styles.benefit}>
           <View style={styles.benefitIcon}>
-            <Ionicons name="lock-open-outline" size={18} color={colors.accentLight} />
+            <Ionicons name="lock-open-outline" size={18} color={color.accent} />
           </View>
           <Text style={styles.benefitText}>
             Débloque ta stature redressée + ton programme perso
@@ -129,35 +130,31 @@ export default function ResultScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.bg,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.md,
+    backgroundColor: color.bg,
+    paddingHorizontal: space.screen,
+    paddingTop: space.md,
   },
   scroll: {
     flex: 1,
   },
   content: {
-    paddingBottom: spacing.lg,
+    paddingBottom: space.lg,
   },
   header: {
     alignItems: 'center',
-    marginTop: spacing.xl,
-    gap: spacing.xs,
+    marginTop: space.xl,
+    gap: space.xs,
   },
   kicker: {
-    color: colors.textMuted,
-    fontSize: 13,
-    fontFamily: fonts.body,
+    ...type.sectionLabel,
   },
   headline: {
-    color: colors.text,
-    fontSize: 19,
-    fontFamily: fonts.display,
+    ...type.screenTitle,
   },
   statRow: {
     flexDirection: 'row',
-    gap: spacing.md,
-    marginTop: spacing.xl,
+    gap: space.md,
+    marginTop: space.xl,
   },
   statCard: {
     flex: 1,
@@ -169,62 +166,51 @@ const styles = StyleSheet.create({
     opacity: 0.85,
   },
   gaugeCard: {
-    alignItems: 'center',
-    paddingVertical: spacing.lg,
-    marginTop: spacing.md,
-    gap: spacing.sm,
+    padding: space.lg,
+    marginTop: space.md,
+    gap: space.md,
   },
   percentile: {
-    color: colors.textMuted,
-    fontSize: 13,
-    lineHeight: 19,
-    fontFamily: fonts.body,
-    textAlign: 'center',
+    ...type.body,
   },
   percentileValue: {
-    color: colors.accentLight,
-    fontFamily: fonts.medium,
+    color: color.accent,
+    fontFamily: font.medium,
   },
   teaserCard: {
-    marginTop: spacing.md,
-    padding: spacing.lg,
+    marginTop: space.md,
+    padding: space.lg,
   },
   teaserRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: space.md,
   },
   teaserText: {
     flex: 1,
-    color: colors.text,
-    fontSize: 15,
-    lineHeight: 22,
-    fontFamily: fonts.body,
+    ...type.bodyMedium,
   },
   teaserTitle: {
     flex: 1,
-    color: colors.text,
-    fontSize: 15,
-    lineHeight: 22,
-    fontFamily: fonts.medium,
+    ...type.cardTitle,
   },
   programLines: {
-    marginTop: spacing.sm,
-    gap: 6,
+    marginTop: space.sm,
+    gap: space.xs,
   },
-  // Flou « réel » sans dépendance : texte transparent + ombre rayon 7.
+  // Flou « réel » sans dépendance : texte transparent + ombre rayon 7
+  // (même mécanique que le masque flouté de StatCard).
   blurredInline: {
     color: 'transparent',
-    fontFamily: fonts.medium,
-    textShadowColor: 'rgba(238, 242, 247, 0.9)',
+    fontFamily: font.medium,
+    textShadowColor: color.textSecond,
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 7,
   },
   blurredLine: {
+    ...type.body,
     color: 'transparent',
-    fontSize: 13,
-    fontFamily: fonts.body,
-    textShadowColor: 'rgba(125, 135, 148, 0.9)',
+    textShadowColor: color.textMuted,
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 7,
   },
@@ -232,26 +218,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.sm,
-    marginTop: spacing.lg,
+    gap: space.sm,
+    marginTop: space.lg,
   },
   benefitIcon: {
     width: 32,
     height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.cardActive,
+    borderRadius: radius.pill,
+    backgroundColor: color.surfaceAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
   benefitText: {
     flex: 1,
-    color: colors.text,
-    fontSize: 13,
-    lineHeight: 19,
-    fontFamily: fonts.body,
+    ...type.body,
+    color: color.textPrimary,
   },
   footer: {
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.sm,
+    paddingTop: space.sm,
+    paddingBottom: space.sm,
   },
 });

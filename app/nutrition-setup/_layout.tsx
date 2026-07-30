@@ -1,13 +1,13 @@
 import { Stack } from 'expo-router';
 
-import { colors } from '@/lib/theme';
+import { color } from '@/theme/tokens';
 
 export default function NutritionSetupLayout() {
   return (
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: colors.bg },
+        contentStyle: { backgroundColor: color.bg },
         animation: 'slide_from_right',
       }}
     />

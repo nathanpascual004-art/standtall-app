@@ -1,33 +1,60 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Card } from '@/components/Card';
+import { MacroBars } from '@/components/MacroBars';
+import { Mascot } from '@/components/Mascot';
+import { PressableScale } from '@/components/PressableScale';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { ProgressChart } from '@/components/ProgressChart';
-import { ScoreGauge } from '@/components/ScoreGauge';
+import { SectionLabel } from '@/components/SectionLabel';
+import { SegmentRail } from '@/components/SegmentRail';
 import { StatCard } from '@/components/StatCard';
+import { Toise } from '@/components/Toise';
 import { computePostureResult } from '@/lib/posture';
 import { SESSIONS } from '@/lib/program';
 import { todayKey, useOnboardingStore } from '@/lib/store';
-import { colors, fonts, radius, spacing } from '@/lib/theme';
+import { borderWidth, color, duration, radius, space, staggerDelay, type } from '@/theme/tokens';
 
 const formatCm = (value: number) => `${value.toFixed(1).replace('.', ',')} cm`;
+
+const DAYS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+const MONTHS = [
+  'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+  'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre',
+];
+
+const formatToday = () => {
+  const now = new Date();
+  return `${DAYS[now.getDay()]} ${now.getDate()} ${MONTHS[now.getMonth()]}`;
+};
+
+/** Hauteurs de layout locales (pas des tokens de design). */
+const TOISE_HEIGHT = 168;
+const MASCOT_SIZE = 92;
+const CHART_HEIGHT = 120;
+
+/** Apparition en cascade des cartes principales (sobre, respecte reduce motion). */
+const cascade = (index: number) =>
+  FadeInDown.delay(index * staggerDelay)
+    .duration(duration.base)
+    .reduceMotion(ReduceMotion.System);
 
 /** Onglet Stature — dashboard principal (après paywall). */
 export default function StatureScreen() {
   const router = useRouter();
   const answers = useOnboardingStore((state) => state.answers);
   const completedSessions = useOnboardingStore((state) => state.completedSessions);
+  const nutritionTargets = useOnboardingStore((state) => state.nutritionTargets);
+  const meals = useOnboardingStore((state) => state.meals);
   const result = computePostureResult(answers);
 
   const doneToday = completedSessions[todayKey()] ?? [];
   const nextSession =
     SESSIONS.find((session) => !doneToday.includes(session.id)) ?? SESSIONS[0];
-
-  // % du programme du jour réellement complété (séances faites aujourd'hui).
-  const programCompletion = Math.round((doneToday.length / SESSIONS.length) * 100);
 
   // Progression réelle : point de départ = score actuel, puis un point par
   // séance complétée (toutes journées confondues), +1 pt plafonné à 100.
@@ -43,6 +70,25 @@ export default function StatureScreen() {
   // séance complétée, plafonné à 100). Le reveal garde le score initial.
   const currentScore = progressScores[progressScores.length - 1];
 
+  // Sous-texte honnête de la toise : part de la pleine hauteur réellement tenue.
+  const pct = answers.heightCm
+    ? Math.round((answers.heightCm / result.correctedHeightCm) * 100)
+    : undefined;
+  const toiseSubtext =
+    pct !== undefined ? `Tu te tiens à ${pct} % de ta pleine hauteur.` : undefined;
+
+  // Consommé du jour (même calcul que l'onglet Nutrition).
+  const todayMeals = meals[todayKey()] ?? [];
+  const consumed = todayMeals.reduce(
+    (total, meal) => ({
+      calories: total.calories + meal.calories,
+      proteinesG: total.proteinesG + meal.proteinesG,
+      glucidesG: total.glucidesG + meal.glucidesG,
+      lipidesG: total.lipidesG + meal.lipidesG,
+    }),
+    { calories: 0, proteinesG: 0, glucidesG: 0, lipidesG: 0 },
+  );
+
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <ScrollView
@@ -51,22 +97,41 @@ export default function StatureScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <View style={styles.headerIcon}>
-            <Ionicons name="body-outline" size={20} color={colors.accentLight} />
+          <View>
+            <Text style={styles.headerTitle}>Salut 👋</Text>
+            <Text style={styles.headerDate}>{formatToday()}</Text>
           </View>
-          <Text style={styles.headerTitle}>Posture & Stature</Text>
-          <Pressable
+          <PressableScale
             onPress={() => router.push('/(tabs)/profil')}
             accessibilityRole="button"
             accessibilityLabel="Réglages"
             hitSlop={8}
-            style={({ pressed }) => [pressed && { opacity: 0.7 }]}
           >
-            <Ionicons name="settings-outline" size={22} color={colors.textMuted} />
-          </Pressable>
+            <Ionicons name="settings-outline" size={22} color={color.textMuted} />
+          </PressableScale>
         </View>
 
-        <View style={styles.statRow}>
+        <Animated.View entering={cascade(0)}>
+          <Card style={styles.heroCard}>
+            <View style={styles.heroToise}>
+              <Toise
+                score={currentScore}
+                delta={currentScore - result.postureScore}
+                label="Score de stature"
+                subtext={toiseSubtext}
+                height={TOISE_HEIGHT}
+              />
+            </View>
+            <Mascot score={currentScore} size={MASCOT_SIZE} />
+          </Card>
+          <Text style={styles.percentile}>
+            Meilleure posture que{' '}
+            <Text style={styles.percentileValue}>{currentScore}%</Text> des gens
+            de ton âge
+          </Text>
+        </Animated.View>
+
+        <Animated.View entering={cascade(1)} style={styles.statRow}>
           <StatCard
             label="Stature avachi"
             value={`${answers.heightCm ?? '—'} cm`}
@@ -77,62 +142,89 @@ export default function StatureScreen() {
             value={formatCm(result.correctedHeightCm)}
             style={[styles.statCard, styles.statCardAccent]}
           />
-        </View>
+        </Animated.View>
 
-        <Card style={styles.infoCard}>
-          <View style={styles.infoIcon}>
-            <Ionicons name="arrow-up-outline" size={16} color={colors.accentLight} />
-          </View>
-          <Text style={styles.infoText}>
-            Tu récupères{' '}
-            <Text style={styles.infoValue}>{formatCm(result.heightLossCm)}</Text> en
-            te redressant
-          </Text>
-        </Card>
-
-        <Card style={styles.chartCard}>
-          <Text style={styles.cardLabel}>Progression posture</Text>
-          {totalDone >= 2 ? (
-            <ProgressChart data={progressScores} />
-          ) : (
-            <View style={styles.chartEmpty}>
-              <Text style={styles.chartEmptyText}>
-                Complète tes séances pour voir ta progression
-              </Text>
+        <Animated.View entering={cascade(2)}>
+          <Card style={styles.infoCard}>
+            <View style={styles.infoIcon}>
+              <Ionicons name="arrow-up-outline" size={16} color={color.accent} />
             </View>
-          )}
-        </Card>
-
-        <Text style={styles.percentile}>
-          Meilleure posture que{' '}
-          <Text style={styles.percentileValue}>{currentScore}%</Text> des gens
-          de ton âge
-        </Text>
-
-        <View style={styles.gaugeRow}>
-          <Card style={styles.gaugeCard}>
-            <ScoreGauge value={currentScore} label="Score posture" size={110} />
+            <Text style={styles.infoText}>
+              Tu récupères{' '}
+              <Text style={styles.infoValue}>{formatCm(result.heightLossCm)}</Text> en
+              te redressant
+            </Text>
           </Card>
-          <Card style={styles.gaugeCard}>
-            <ScoreGauge
-              value={programCompletion}
-              label="Programme complété"
-              size={110}
-              suffix="%"
+        </Animated.View>
+
+        <Animated.View entering={cascade(3)}>
+          <Card style={styles.programCard}>
+            <SectionLabel>Programme du jour</SectionLabel>
+            <SegmentRail total={SESSIONS.length} done={doneToday.length} />
+            <Text style={styles.programMeta}>
+              {doneToday.length}/{SESSIONS.length} séances aujourd'hui
+            </Text>
+          </Card>
+        </Animated.View>
+
+        <Animated.View entering={cascade(4)}>
+          <Card style={styles.sessionCard}>
+            <SectionLabel>Prochaine séance</SectionLabel>
+            <Text style={styles.sessionTitle}>
+              {nextSession.titre} — {nextSession.durationMin} min
+            </Text>
+            <PrimaryButton
+              label="Commencer"
+              onPress={() => router.push(`/session/${nextSession.id}`)}
             />
           </Card>
-        </View>
+        </Animated.View>
 
-        <Card style={styles.sessionCard}>
-          <Text style={styles.cardLabel}>Prochaine séance</Text>
-          <Text style={styles.sessionTitle}>
-            {nextSession.titre} — {nextSession.durationMin} min
-          </Text>
-          <PrimaryButton
-            label="Commencer"
-            onPress={() => router.push(`/session/${nextSession.id}`)}
-          />
-        </Card>
+        <Animated.View entering={cascade(5)}>
+          <Card style={styles.chartCard}>
+            <SectionLabel>Progression posture</SectionLabel>
+            {totalDone >= 2 ? (
+              <ProgressChart data={progressScores} height={CHART_HEIGHT} />
+            ) : (
+              <View style={styles.chartEmpty}>
+                <Text style={styles.chartEmptyText}>
+                  Complète tes séances pour voir ta progression
+                </Text>
+              </View>
+            )}
+          </Card>
+        </Animated.View>
+
+        <Animated.View entering={cascade(6)}>
+          {nutritionTargets ? (
+            <Card style={styles.nutritionCard}>
+              <SectionLabel>Nutrition</SectionLabel>
+              <MacroBars
+                proteines={{ value: consumed.proteinesG, target: nutritionTargets.proteinesG }}
+                glucides={{ value: consumed.glucidesG, target: nutritionTargets.glucidesG }}
+                lipides={{ value: consumed.lipidesG, target: nutritionTargets.lipidesG }}
+                kcal={{ value: consumed.calories, target: nutritionTargets.calories }}
+              />
+              <PrimaryButton
+                label="Scanner un repas"
+                onPress={() => router.push('/(tabs)/nutrition')}
+              />
+            </Card>
+          ) : (
+            <Card style={styles.nutritionCard}>
+              <SectionLabel>Nutrition</SectionLabel>
+              <Text style={styles.nutritionTeaser}>
+                Calcule tes besoins en calories et en macros, adaptés à ton
+                objectif.
+              </Text>
+              <PrimaryButton
+                label="Configurer"
+                variant="secondary"
+                onPress={() => router.push('/nutrition-setup')}
+              />
+            </Card>
+          )}
+        </Animated.View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -141,126 +233,124 @@ export default function StatureScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.bg,
+    backgroundColor: color.bg,
   },
   scroll: {
     flex: 1,
   },
   content: {
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.xl,
+    paddingHorizontal: space.screen,
+    paddingTop: space.md,
+    paddingBottom: space.xl,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
-  },
-  headerIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.button,
-    backgroundColor: colors.cardActive,
-    alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
+    gap: space.md,
   },
   headerTitle: {
+    ...type.cardTitle,
+  },
+  headerDate: {
+    ...type.meta,
+    marginTop: space.xs / 2,
+  },
+  heroCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    marginTop: space.lg,
+    padding: space.lg,
+  },
+  heroToise: {
     flex: 1,
-    color: colors.text,
-    fontSize: 20,
-    fontFamily: fonts.display,
+  },
+  percentile: {
+    ...type.body,
+    textAlign: 'center',
+    marginTop: space.md,
+  },
+  percentileValue: {
+    ...type.bodyMedium,
+    color: color.accent,
   },
   statRow: {
     flexDirection: 'row',
-    gap: spacing.md,
-    marginTop: spacing.xl,
+    gap: space.md,
+    marginTop: space.md,
   },
   statCard: {
     flex: 1,
   },
   statCardAccent: {
-    borderWidth: 1,
-    borderColor: colors.accent,
+    borderWidth: borderWidth.hairline,
+    borderColor: color.accent,
   },
   infoCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
-    marginTop: spacing.md,
-    padding: spacing.lg,
+    gap: space.md,
+    marginTop: space.md,
+    padding: space.lg,
   },
   infoIcon: {
     width: 28,
     height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.cardActive,
+    borderRadius: radius.pill,
+    backgroundColor: color.surfaceAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
   infoText: {
+    ...type.body,
     flex: 1,
-    color: colors.text,
-    fontSize: 14,
-    lineHeight: 20,
-    fontFamily: fonts.body,
+    color: color.textPrimary,
   },
   infoValue: {
-    color: colors.accentLight,
-    fontFamily: fonts.medium,
+    ...type.bodyMedium,
+    color: color.accent,
+  },
+  programCard: {
+    marginTop: space.md,
+    padding: space.lg,
+    gap: space.md,
+  },
+  programMeta: {
+    ...type.meta,
+    fontVariant: ['tabular-nums'],
+  },
+  sessionCard: {
+    marginTop: space.md,
+    padding: space.lg,
+    gap: space.md,
+  },
+  sessionTitle: {
+    ...type.cardTitle,
   },
   chartCard: {
-    marginTop: spacing.md,
-    gap: spacing.sm,
+    marginTop: space.md,
+    padding: space.lg,
+    gap: space.sm,
   },
   // État vide : même hauteur que la courbe pour un layout stable.
   chartEmpty: {
-    height: 120,
+    height: CHART_HEIGHT,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: space.lg,
   },
   chartEmptyText: {
-    color: colors.textMuted,
-    fontSize: 13,
-    lineHeight: 19,
-    fontFamily: fonts.body,
+    ...type.body,
+    color: color.textMuted,
     textAlign: 'center',
   },
-  cardLabel: {
-    color: colors.textMuted,
-    fontSize: 11,
-    fontFamily: fonts.body,
+  nutritionCard: {
+    marginTop: space.md,
+    padding: space.lg,
+    gap: space.lg,
   },
-  percentile: {
-    color: colors.textMuted,
-    fontSize: 13,
-    lineHeight: 19,
-    fontFamily: fonts.body,
-    textAlign: 'center',
-    marginTop: spacing.lg,
-  },
-  percentileValue: {
-    color: colors.accentLight,
-    fontFamily: fonts.medium,
-  },
-  gaugeRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginTop: spacing.lg,
-  },
-  gaugeCard: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: spacing.lg,
-  },
-  sessionCard: {
-    marginTop: spacing.md,
-    padding: spacing.lg,
-    gap: spacing.md,
-  },
-  sessionTitle: {
-    color: colors.text,
-    fontSize: 15,
-    fontFamily: fonts.medium,
+  nutritionTeaser: {
+    ...type.body,
   },
 });

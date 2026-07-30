@@ -1,12 +1,13 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Mascot } from '@/components/Mascot';
 import { OnboardingProgress } from '@/components/OnboardingProgress';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { TOTAL_ONBOARDING_STEPS } from '@/lib/store';
-import { colors, fonts, radius, spacing } from '@/lib/theme';
+import { color, duration, space, type } from '@/theme/tokens';
 
 /** Étape 11/14 — écran insight (pas de question). */
 export default function InsightScreen() {
@@ -16,17 +17,18 @@ export default function InsightScreen() {
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <OnboardingProgress step={11} total={TOTAL_ONBOARDING_STEPS} />
 
-      <View style={styles.body}>
-        <View style={styles.iconBadge}>
-          <Ionicons name="body-outline" size={28} color={colors.accentLight} />
-        </View>
+      <Animated.View
+        style={styles.body}
+        entering={FadeInDown.duration(duration.base).reduceMotion(ReduceMotion.System)}
+      >
+        <Mascot state="encourage" size={72} />
         <Text style={styles.insight}>
           Rester assis 8h+ par jour tasse la colonne et enroule les épaules.
         </Text>
         <Text style={styles.consequence}>
           Résultat : plusieurs centimètres de stature perdus au quotidien.
         </Text>
-      </View>
+      </Animated.View>
 
       <View style={styles.footer}>
         <PrimaryButton label="Continuer" onPress={() => router.push('/onboarding/step12')} />
@@ -38,38 +40,27 @@ export default function InsightScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.bg,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.md,
+    backgroundColor: color.bg,
+    paddingHorizontal: space.screen,
+    paddingTop: space.md,
   },
   body: {
     flex: 1,
     justifyContent: 'center',
-    gap: spacing.lg,
-    paddingBottom: spacing.xxl,
+    gap: space.lg,
+    paddingBottom: space.xxl,
   },
-  iconBadge: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.card,
-    backgroundColor: colors.cardActive,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-  },
+  // Corps de texte long : pas de capitales (textTransform désactivé).
   insight: {
-    color: colors.text,
-    fontSize: 24,
-    lineHeight: 33,
-    fontFamily: fonts.display,
+    ...type.question,
+    textTransform: 'none',
+    letterSpacing: 0,
   },
   consequence: {
-    color: colors.accentLight,
-    fontSize: 17,
-    lineHeight: 25,
-    fontFamily: fonts.body,
+    ...type.cardTitle,
+    color: color.accent,
   },
   footer: {
-    paddingBottom: spacing.sm,
+    paddingBottom: space.sm,
   },
 });

@@ -1,4 +1,5 @@
 import * as Haptics from 'expo-haptics';
+import { useState } from 'react';
 import { Platform, Pressable, type PressableProps } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -31,21 +32,31 @@ export function PressableScale({
 }: PressableScaleProps) {
   const reducedMotion = useReducedMotion();
   const scale = useSharedValue(1);
+  // Les styles-fonctions ({ pressed }) => … sont résolus ici : un tableau de
+  // styles ne peut pas contenir de fonction (elle serait ignorée en silence).
+  const [pressed, setPressed] = useState(false);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
 
+  const resolvedStyle =
+    typeof style === 'function'
+      ? style({ pressed } as Parameters<typeof style>[0])
+      : style;
+
   return (
     <AnimatedPressable
       {...rest}
       onPressIn={(event) => {
+        setPressed(true);
         if (!reducedMotion) {
           scale.value = withTiming(pressScale, { duration: duration.tap });
         }
         onPressIn?.(event);
       }}
       onPressOut={(event) => {
+        setPressed(false);
         scale.value = withTiming(1, { duration: duration.tap });
         onPressOut?.(event);
       }}
@@ -59,7 +70,7 @@ export function PressableScale({
         }
         onPress?.(event);
       }}
-      style={[style as never, animatedStyle]}
+      style={[resolvedStyle, animatedStyle]}
     >
       {children}
     </AnimatedPressable>

@@ -1,13 +1,14 @@
 import { useRouter, type Href } from 'expo-router';
 import { useState, type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { OnboardingProgress } from '@/components/OnboardingProgress';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { QuizOption } from '@/components/QuizOption';
 import { TOTAL_ONBOARDING_STEPS, useOnboardingStore, type QuizAnswers } from '@/lib/store';
-import { colors, fonts, spacing } from '@/lib/theme';
+import { color, duration, space, type } from '@/theme/tokens';
 
 type AnswerKey = keyof QuizAnswers;
 
@@ -55,7 +56,11 @@ export function QuizSingleSelectScreen<K extends AnswerKey>({
 
       <Text style={styles.title}>{title}</Text>
 
-      <View style={styles.options}>
+      {/* Une seule animation par écran : apparition douce du bloc d'options. */}
+      <Animated.View
+        style={styles.options}
+        entering={FadeInDown.duration(duration.base).reduceMotion(ReduceMotion.System)}
+      >
         {options.map((option) => {
           const isSelected = selected === option.value;
           return (
@@ -68,7 +73,7 @@ export function QuizSingleSelectScreen<K extends AnswerKey>({
             />
           );
         })}
-      </View>
+      </Animated.View>
 
       <View style={styles.footer}>
         <PrimaryButton
@@ -84,24 +89,21 @@ export function QuizSingleSelectScreen<K extends AnswerKey>({
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.bg,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.md,
+    backgroundColor: color.bg,
+    paddingHorizontal: space.screen,
+    paddingTop: space.md,
   },
   title: {
-    color: colors.text,
-    fontSize: 26,
-    lineHeight: 34,
-    fontFamily: fonts.display,
-    marginTop: spacing.xxl,
+    ...type.question,
+    marginTop: space.xxl,
   },
   options: {
-    marginTop: spacing.xxl,
-    gap: 10,
+    marginTop: space.xxl,
+    gap: space.md,
   },
   footer: {
     flex: 1,
     justifyContent: 'flex-end',
-    paddingBottom: spacing.sm,
+    paddingBottom: space.sm,
   },
 });

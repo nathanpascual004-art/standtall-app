@@ -1,12 +1,12 @@
 import Svg, { Circle, Path } from 'react-native-svg';
 
-import { colors } from '@/lib/theme';
+import { color as tokenColor } from '@/theme/tokens';
 
 export type PostureVariant = 'droit' | 'legerement-voute' | 'tres-voute';
 
 type PostureFigureProps = {
   variant: PostureVariant;
-  /** Couleur du tracé (par défaut : textMuted). */
+  /** Couleur du tracé (par défaut : textMuted — accent quand sélectionné). */
   color?: string;
   size?: number;
 };
@@ -14,10 +14,11 @@ type PostureFigureProps = {
 /**
  * Silhouette de profil minimaliste (tête + colonne + jambe) illustrant
  * la tenue spontanée : droit, légèrement voûté, très voûté.
+ * Se dessine en textMuted (ou accent) sur le fond surfaceAlt de l'option.
  */
 export function PostureFigure({
   variant,
-  color = colors.textMuted,
+  color = tokenColor.textMuted,
   size = 44,
 }: PostureFigureProps) {
   // viewBox 44x44 — tête vers la droite (profil), sol en bas.

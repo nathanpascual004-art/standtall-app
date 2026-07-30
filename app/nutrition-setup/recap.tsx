@@ -1,5 +1,6 @@
 import { Redirect, useRouter } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { OnboardingProgress } from '@/components/OnboardingProgress';
@@ -11,7 +12,20 @@ import {
   type NutritionProfile,
 } from '@/lib/nutrition';
 import { useOnboardingStore } from '@/lib/store';
-import { colors, fonts, spacing } from '@/lib/theme';
+import {
+  borderWidth,
+  color,
+  duration,
+  space,
+  staggerDelay,
+  type,
+} from '@/theme/tokens';
+
+/** Apparition en cascade des cartes (sobre, respecte reduce motion). */
+const cascade = (index: number) =>
+  FadeInDown.delay(index * staggerDelay)
+    .duration(duration.base)
+    .reduceMotion(ReduceMotion.System);
 
 /** Setup nutrition 4/4 — récap des cibles calculées. */
 export default function NutritionRecapScreen() {
@@ -50,17 +64,19 @@ export default function NutritionRecapScreen() {
       <OnboardingProgress step={4} total={4} />
       <Text style={styles.title}>Tes objectifs nutrition</Text>
 
-      <StatCard
-        label="Calories / jour"
-        value={`${targets.calories} kcal`}
-        style={styles.caloriesCard}
-      />
+      <Animated.View entering={cascade(0)}>
+        <StatCard
+          label="Calories / jour"
+          value={`${targets.calories} kcal`}
+          style={styles.caloriesCard}
+        />
+      </Animated.View>
 
-      <View style={styles.macroRow}>
+      <Animated.View entering={cascade(1)} style={styles.macroRow}>
         <StatCard label="Protéines" value={`${targets.proteinesG} g`} style={styles.flex} />
         <StatCard label="Glucides" value={`${targets.glucidesG} g`} style={styles.flex} />
         <StatCard label="Lipides" value={`${targets.lipidesG} g`} style={styles.flex} />
-      </View>
+      </Animated.View>
 
       <Text style={styles.note}>Estimation, à ajuster selon les résultats réels.</Text>
 
@@ -74,40 +90,34 @@ export default function NutritionRecapScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.bg,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.md,
+    backgroundColor: color.bg,
+    paddingHorizontal: space.screen,
+    paddingTop: space.md,
   },
   title: {
-    color: colors.text,
-    fontSize: 26,
-    lineHeight: 34,
-    fontFamily: fonts.display,
-    marginTop: spacing.xxl,
+    ...type.question,
+    marginTop: space.xxl,
   },
   caloriesCard: {
-    marginTop: spacing.xxl,
-    borderWidth: 1,
-    borderColor: colors.accent,
+    marginTop: space.xxl,
+    borderWidth: borderWidth.hairline,
+    borderColor: color.accent,
   },
   macroRow: {
     flexDirection: 'row',
-    gap: spacing.md,
-    marginTop: spacing.md,
+    gap: space.md,
+    marginTop: space.md,
   },
   flex: {
     flex: 1,
   },
   note: {
-    color: colors.textMuted,
-    fontSize: 12,
-    lineHeight: 17,
-    fontFamily: fonts.body,
-    marginTop: spacing.lg,
+    ...type.meta,
+    marginTop: space.lg,
   },
   footer: {
     flex: 1,
     justifyContent: 'flex-end',
-    paddingBottom: spacing.sm,
+    paddingBottom: space.sm,
   },
 });

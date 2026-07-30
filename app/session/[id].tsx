@@ -1,10 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { BrandImage } from '@/components/BrandImage';
 import { Card } from '@/components/Card';
+import { CheckBurst } from '@/components/CheckBurst';
+import { Mascot } from '@/components/Mascot';
+import { PressableScale } from '@/components/PressableScale';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { ProgressBar } from '@/components/ProgressBar';
 import {
@@ -14,13 +19,31 @@ import {
   type Session,
 } from '@/lib/program';
 import { useOnboardingStore } from '@/lib/store';
-import { colors, fonts, radius, spacing } from '@/lib/theme';
+import {
+  borderWidth,
+  color,
+  duration,
+  radius,
+  space,
+  staggerDelay,
+  type,
+} from '@/theme/tokens';
+
+/** Dimensions de layout locales (pas des tokens de design). */
+const ICON_BUTTON_SIZE = 32;
+const MASCOT_SIZE = 88;
 
 const formatClock = (sec: number) => {
   const minutes = Math.floor(sec / 60);
   const seconds = sec % 60;
   return `${minutes}:${String(seconds).padStart(2, '0')}`;
 };
+
+/** Apparition en cascade des blocs principaux (sobre, respecte reduce motion). */
+const cascade = (index: number) =>
+  FadeInDown.delay(index * staggerDelay)
+    .duration(duration.base)
+    .reduceMotion(ReduceMotion.System);
 
 /** Lecteur étape par étape : exercice courant + timer + « Suivant ». */
 function SessionPlayer({
@@ -65,15 +88,15 @@ function SessionPlayer({
   return (
     <View style={styles.flex}>
       <View style={styles.playerHeader}>
-        <Pressable
+        <PressableScale
           onPress={onQuit}
           accessibilityRole="button"
           accessibilityLabel="Quitter la séance"
           hitSlop={12}
-          style={({ pressed }) => [styles.iconButton, pressed && { opacity: 0.7 }]}
+          style={styles.iconButton}
         >
-          <Ionicons name="close" size={20} color={colors.textMuted} />
-        </Pressable>
+          <Ionicons name="close" size={20} color={color.textMuted} />
+        </PressableScale>
         <Text style={styles.playerStep}>
           Exercice {index + 1}/{session.exercises.length}
         </Text>
@@ -112,7 +135,7 @@ export default function SessionScreen() {
   if (!session) {
     return (
       <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-        <Text style={styles.title}>Séance introuvable</Text>
+        <Text style={styles.notFoundTitle}>Séance introuvable</Text>
         <View style={styles.footer}>
           <PrimaryButton label="Retour" onPress={() => router.back()} />
         </View>
@@ -130,15 +153,15 @@ export default function SessionScreen() {
       {mode === 'detail' ? (
         <>
           <View style={styles.detailHeader}>
-            <Pressable
+            <PressableScale
               onPress={() => router.back()}
               accessibilityRole="button"
               accessibilityLabel="Retour"
               hitSlop={12}
-              style={({ pressed }) => [styles.iconButton, pressed && { opacity: 0.7 }]}
+              style={styles.iconButton}
             >
-              <Ionicons name="chevron-back" size={20} color={colors.textMuted} />
-            </Pressable>
+              <Ionicons name="chevron-back" size={20} color={color.textMuted} />
+            </PressableScale>
           </View>
 
           <ScrollView
@@ -146,12 +169,22 @@ export default function SessionScreen() {
             contentContainerStyle={styles.detailContent}
             showsVerticalScrollIndicator={false}
           >
-            <Text style={styles.title}>{session.titre}</Text>
-            <Text style={styles.meta}>
-              {session.durationMin} min · {session.exercises.length} exercices
-            </Text>
+            <Animated.View entering={cascade(0)}>
+              <BrandImage
+                aspectRatio={16 / 9}
+                borderRadius={radius.tile}
+                icon="barbell-outline"
+                scrim
+                style={styles.hero}
+              >
+                <Text style={styles.heroTitle}>{session.titre}</Text>
+                <Text style={styles.heroMeta}>
+                  {session.durationMin} min · {session.exercises.length} exercices
+                </Text>
+              </BrandImage>
+            </Animated.View>
 
-            <View style={styles.exercises}>
+            <Animated.View entering={cascade(1)} style={styles.exercises}>
               {session.exercises.map((exercise) => (
                 <Card key={exercise.id} style={styles.exerciseCard}>
                   <View style={styles.exerciseHeader}>
@@ -166,7 +199,7 @@ export default function SessionScreen() {
                   </View>
                 </Card>
               ))}
-            </View>
+            </Animated.View>
 
             <Text style={styles.disclaimer}>{PROGRAM_DISCLAIMER}</Text>
           </ScrollView>
@@ -188,7 +221,8 @@ export default function SessionScreen() {
       {mode === 'done' ? (
         <View style={styles.doneBody}>
           <View style={styles.doneContent}>
-            <Ionicons name="checkmark-circle" size={56} color={colors.accentLight} />
+            <CheckBurst />
+            <Mascot state="celebrate" size={MASCOT_SIZE} />
             <Text style={styles.doneTitle}>Séance terminée</Text>
             <Text style={styles.doneHint}>
               Bien joué. La régularité fait le redressement — reviens demain.
@@ -209,9 +243,9 @@ export default function SessionScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.bg,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.md,
+    backgroundColor: color.bg,
+    paddingHorizontal: space.screen,
+    paddingTop: space.md,
   },
   flex: {
     flex: 1,
@@ -220,118 +254,102 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   iconButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.card,
+    width: ICON_BUTTON_SIZE,
+    height: ICON_BUTTON_SIZE,
+    borderRadius: radius.pill,
+    backgroundColor: color.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   detailContent: {
-    paddingBottom: spacing.lg,
+    paddingBottom: space.lg,
   },
-  title: {
-    color: colors.text,
-    fontSize: 26,
-    lineHeight: 34,
-    fontFamily: fonts.display,
-    marginTop: spacing.lg,
+  notFoundTitle: {
+    ...type.screenTitle,
+    marginTop: space.lg,
   },
-  meta: {
-    color: colors.textMuted,
-    fontSize: 13,
-    fontFamily: fonts.body,
-    marginTop: spacing.xs,
+  hero: {
+    marginTop: space.lg,
+  },
+  heroTitle: {
+    ...type.statNumberSmall,
+  },
+  heroMeta: {
+    ...type.meta,
+    color: color.textSecond,
+    marginTop: space.xs / 2,
   },
   exercises: {
-    marginTop: spacing.xl,
-    gap: spacing.md,
+    marginTop: space.xl,
+    gap: space.md,
   },
   exerciseCard: {
-    padding: spacing.lg,
-    gap: spacing.sm,
+    padding: space.lg,
+    gap: space.sm,
   },
   exerciseHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: space.md,
   },
   exerciseName: {
+    ...type.bodyMedium,
     flex: 1,
-    color: colors.text,
-    fontSize: 15,
-    fontFamily: fonts.medium,
   },
   exerciseDuration: {
-    color: colors.accentLight,
-    fontSize: 13,
-    fontFamily: fonts.medium,
+    ...type.meta,
   },
   exerciseDescription: {
-    color: colors.textMuted,
-    fontSize: 13,
-    lineHeight: 19,
-    fontFamily: fonts.body,
+    ...type.body,
   },
   cibleChip: {
     alignSelf: 'flex-start',
-    backgroundColor: colors.cardActive,
-    borderRadius: 999,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
+    borderWidth: borderWidth.hairline,
+    borderColor: color.accent,
+    borderRadius: radius.pill,
+    paddingHorizontal: space.sm,
+    paddingVertical: space.xs / 2,
   },
   cibleLabel: {
-    color: colors.accentLight,
-    fontSize: 11,
-    fontFamily: fonts.medium,
+    ...type.sectionLabel,
+    // Taille réduite du chip (spécifiée par la maquette) — dérivée de sectionLabel.
+    fontSize: 10,
+    color: color.accent,
   },
   disclaimer: {
-    color: colors.textMuted,
-    fontSize: 11,
-    lineHeight: 16,
-    fontFamily: fonts.body,
-    marginTop: spacing.xl,
+    ...type.meta,
+    marginTop: space.xl,
     textAlign: 'center',
   },
   playerHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: spacing.md,
+    marginBottom: space.md,
   },
   playerStep: {
-    color: colors.textMuted,
-    fontSize: 13,
-    fontFamily: fonts.body,
+    ...type.meta,
     fontVariant: ['tabular-nums'],
   },
   playerBody: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    gap: spacing.lg,
-    paddingBottom: spacing.xxl,
+    gap: space.lg,
+    paddingBottom: space.xxl,
   },
   playerExercise: {
-    color: colors.text,
-    fontSize: 24,
-    lineHeight: 32,
-    fontFamily: fonts.display,
+    ...type.statNumberSmall,
     textAlign: 'center',
   },
   playerDescription: {
-    color: colors.textMuted,
-    fontSize: 14,
-    lineHeight: 21,
-    fontFamily: fonts.body,
+    ...type.body,
     textAlign: 'center',
   },
   playerClock: {
-    color: colors.text,
-    fontSize: 48,
-    fontFamily: fonts.display,
+    ...type.statNumber,
     fontVariant: ['tabular-nums'],
-    marginTop: spacing.sm,
+    marginTop: space.sm,
   },
   doneBody: {
     flex: 1,
@@ -340,22 +358,17 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.md,
+    gap: space.md,
   },
   doneTitle: {
-    color: colors.text,
-    fontSize: 24,
-    fontFamily: fonts.display,
+    ...type.statNumberSmall,
   },
   doneHint: {
-    color: colors.textMuted,
-    fontSize: 14,
-    lineHeight: 20,
-    fontFamily: fonts.body,
+    ...type.body,
     textAlign: 'center',
   },
   footer: {
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.sm,
+    paddingTop: space.sm,
+    paddingBottom: space.sm,
   },
 });

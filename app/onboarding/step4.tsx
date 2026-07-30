@@ -7,21 +7,16 @@ import {
   Text,
   TextInput,
   View,
-  type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { OnboardingProgress } from '@/components/OnboardingProgress';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { TOTAL_ONBOARDING_STEPS, useOnboardingStore } from '@/lib/store';
-import { colors, fonts, radius, spacing } from '@/lib/theme';
+import { borderWidth, color, radius, space, type, webNoOutline } from '@/theme/tokens';
 
 const MIN_CM = 100;
 const MAX_CM = 230;
-
-/** Neutralise le focus ring du navigateur (web uniquement). */
-const webNoOutline: TextStyle | null =
-  Platform.OS === 'web' ? ({ outlineStyle: 'none' } as unknown as TextStyle) : null;
 
 /** Étape 4/14 — taille actuelle en cm (clavier numérique). */
 export default function HeightScreen() {
@@ -56,7 +51,7 @@ export default function HeightScreen() {
             onChangeText={(text) => setRaw(text.replace(/[^0-9]/g, '').slice(0, 3))}
             keyboardType="number-pad"
             placeholder="175"
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor={color.textMuted}
             maxLength={3}
             autoFocus
           />
@@ -79,51 +74,43 @@ export default function HeightScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.bg,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.md,
+    backgroundColor: color.bg,
+    paddingHorizontal: space.screen,
+    paddingTop: space.md,
   },
   flex: {
     flex: 1,
   },
   title: {
-    color: colors.text,
-    fontSize: 26,
-    lineHeight: 34,
-    fontFamily: fonts.display,
-    marginTop: spacing.xxl,
+    ...type.question,
+    marginTop: space.xxl,
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.card,
+    backgroundColor: color.surface,
     borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.lg,
-    marginTop: spacing.xxl,
+    borderWidth: borderWidth.hairline,
+    borderColor: color.border,
+    paddingHorizontal: space.lg,
+    marginTop: space.xxl,
   },
   input: {
     flex: 1,
-    color: colors.text,
-    fontSize: 24,
-    fontFamily: fonts.medium,
-    paddingVertical: 18,
+    ...type.statNumberSmall,
+    fontVariant: ['tabular-nums'],
+    paddingVertical: space.lg,
   },
   unit: {
-    color: colors.textMuted,
-    fontSize: 16,
-    fontFamily: fonts.body,
+    ...type.body,
   },
   hint: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontFamily: fonts.body,
-    marginTop: spacing.sm,
+    ...type.meta,
+    marginTop: space.sm,
   },
   footer: {
     flex: 1,
     justifyContent: 'flex-end',
-    paddingBottom: spacing.sm,
+    paddingBottom: space.sm,
   },
 });

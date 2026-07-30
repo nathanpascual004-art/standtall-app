@@ -2,9 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { PurchasesOffering, PurchasesPackage } from 'react-native-purchases';
 
+import { Card } from '@/components/Card';
+import { Mascot } from '@/components/Mascot';
+import { PressableScale } from '@/components/PressableScale';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { PRIVACY_URL, TERMS_URL } from '@/lib/config';
 import {
@@ -16,7 +20,16 @@ import {
   restorePurchases,
 } from '@/lib/purchases';
 import { useOnboardingStore } from '@/lib/store';
-import { colors, fonts, radius, spacing } from '@/lib/theme';
+import {
+  borderWidth,
+  color,
+  duration,
+  font,
+  radius,
+  space,
+  staggerDelay,
+  type,
+} from '@/theme/tokens';
 
 /** Prix de fallback (affichés si getOfferings échoue — l'écran n'est jamais vide). */
 const FALLBACK_ANNUAL_PRICE = '49,99 €';
@@ -29,6 +42,26 @@ const BENEFITS = [
   "Ton programme d'étirements sur-mesure",
   'Suivi de ta progression',
 ];
+
+/** Dimensions de layout locales (pas des tokens de design). */
+const MASCOT_SIZE = 72;
+const CLOSE_SIZE = 32;
+const BADGE_LIFT = 9;
+
+/**
+ * Tailles dictées par la spec paywall : titre 22 (phrase, pas de capitales),
+ * badge 9 pt, chip d'essai 10 pt.
+ */
+const TITLE_SIZE = 22;
+const TITLE_LINE_HEIGHT = 28;
+const BADGE_FONT_SIZE = 9;
+const CHIP_FONT_SIZE = 10;
+
+/** Apparition en cascade des blocs principaux (sobre, respecte reduce motion). */
+const cascade = (index: number) =>
+  FadeInDown.delay(index * staggerDelay)
+    .duration(duration.base)
+    .reduceMotion(ReduceMotion.System);
 
 type Plan = 'annual' | 'monthly' | 'weekly';
 
@@ -136,15 +169,15 @@ export default function PaywallScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <View style={styles.closeRow}>
-        <Pressable
+        <PressableScale
           onPress={() => router.back()}
           accessibilityRole="button"
           accessibilityLabel="Fermer"
           hitSlop={12}
-          style={({ pressed }) => [styles.close, pressed && { opacity: 0.7 }]}
+          style={styles.close}
         >
-          <Ionicons name="close" size={20} color={colors.textMuted} />
-        </Pressable>
+          <Ionicons name="close" size={20} color={color.textMuted} />
+        </PressableScale>
       </View>
 
       <ScrollView
@@ -152,70 +185,84 @@ export default function PaywallScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>Débloque ta stature redressée</Text>
-        <Text style={styles.subtitle}>Ton programme posture personnalisé t'attend</Text>
+        <Animated.View entering={cascade(0)} style={styles.titleRow}>
+          <View style={styles.titleBlock}>
+            <Text style={styles.title}>Débloque ta stature redressée</Text>
+            <Text style={styles.subtitle}>Ton programme posture personnalisé t'attend</Text>
+          </View>
+          <Mascot state="encourage" size={MASCOT_SIZE} />
+        </Animated.View>
 
-        <View style={styles.benefits}>
+        <Animated.View entering={cascade(1)} style={styles.benefits}>
           {BENEFITS.map((benefit) => (
             <View key={benefit} style={styles.benefitRow}>
-              <Ionicons name="checkmark-circle" size={20} color={colors.accentLight} />
+              <Ionicons name="checkmark-circle" size={20} color={color.accent} />
               <Text style={styles.benefitText}>{benefit}</Text>
             </View>
           ))}
-        </View>
+        </Animated.View>
 
         <View style={styles.offers}>
-          <Pressable
-            onPress={() => setSelected('annual')}
-            accessibilityRole="radio"
-            accessibilityState={{ selected: selected === 'annual' }}
-            style={[styles.offer, selected === 'annual' && styles.offerSelected]}
-          >
-            <View style={styles.badge}>
-              <Text style={styles.badgeLabel}>Le plus choisi</Text>
-            </View>
-            <View style={styles.offerBody}>
-              <View style={styles.offerNameRow}>
-                <Text style={styles.offerName}>Annuel</Text>
-                <TrialChip />
-              </View>
-              <Text style={styles.offerDetail}>
-                puis <Text style={styles.priceInline}>{annualPrice}</Text>/an
-              </Text>
-            </View>
-            <Text style={styles.offerPerWeek}>{annualPerWeek}/sem</Text>
-          </Pressable>
+          <Animated.View entering={cascade(2)}>
+            <PressableScale
+              onPress={() => setSelected('annual')}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: selected === 'annual' }}
+            >
+              <Card style={[styles.offer, selected === 'annual' && styles.offerSelected]}>
+                <View style={styles.badge}>
+                  <Text style={styles.badgeLabel}>Le plus choisi</Text>
+                </View>
+                <View style={styles.offerBody}>
+                  <View style={styles.offerNameRow}>
+                    <Text style={styles.offerName}>Annuel</Text>
+                    <TrialChip />
+                  </View>
+                  <Text style={styles.offerDetail}>
+                    puis <Text style={styles.priceInline}>{annualPrice}</Text>/an
+                  </Text>
+                </View>
+                <Text style={styles.offerPerWeek}>{annualPerWeek}/sem</Text>
+              </Card>
+            </PressableScale>
+          </Animated.View>
 
-          <Pressable
-            onPress={() => setSelected('monthly')}
-            accessibilityRole="radio"
-            accessibilityState={{ selected: selected === 'monthly' }}
-            style={[styles.offer, selected === 'monthly' && styles.offerSelected]}
-          >
-            <View style={styles.offerBody}>
-              <Text style={styles.offerName}>Mensuel</Text>
-              <Text style={styles.offerDetail}>
-                <Text style={styles.priceInline}>{monthlyPrice}</Text>/mois
-              </Text>
-            </View>
-          </Pressable>
+          <Animated.View entering={cascade(3)}>
+            <PressableScale
+              onPress={() => setSelected('monthly')}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: selected === 'monthly' }}
+            >
+              <Card style={[styles.offer, selected === 'monthly' && styles.offerSelected]}>
+                <View style={styles.offerBody}>
+                  <Text style={styles.offerName}>Mensuel</Text>
+                  <Text style={styles.offerDetail}>
+                    <Text style={styles.priceInline}>{monthlyPrice}</Text>/mois
+                  </Text>
+                </View>
+              </Card>
+            </PressableScale>
+          </Animated.View>
 
-          <Pressable
-            onPress={() => setSelected('weekly')}
-            accessibilityRole="radio"
-            accessibilityState={{ selected: selected === 'weekly' }}
-            style={[styles.offer, selected === 'weekly' && styles.offerSelected]}
-          >
-            <View style={styles.offerBody}>
-              <View style={styles.offerNameRow}>
-                <Text style={styles.offerName}>Hebdo</Text>
-                <TrialChip />
-              </View>
-              <Text style={styles.offerDetail}>
-                puis <Text style={styles.priceInline}>{weeklyPrice}</Text>/sem
-              </Text>
-            </View>
-          </Pressable>
+          <Animated.View entering={cascade(4)}>
+            <PressableScale
+              onPress={() => setSelected('weekly')}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: selected === 'weekly' }}
+            >
+              <Card style={[styles.offer, selected === 'weekly' && styles.offerSelected]}>
+                <View style={styles.offerBody}>
+                  <View style={styles.offerNameRow}>
+                    <Text style={styles.offerName}>Hebdo</Text>
+                    <TrialChip />
+                  </View>
+                  <Text style={styles.offerDetail}>
+                    puis <Text style={styles.priceInline}>{weeklyPrice}</Text>/sem
+                  </Text>
+                </View>
+              </Card>
+            </PressableScale>
+          </Animated.View>
         </View>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -249,18 +296,18 @@ export default function PaywallScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.bg,
-    paddingHorizontal: spacing.xl,
+    backgroundColor: color.bg,
+    paddingHorizontal: space.screen,
   },
   closeRow: {
     alignItems: 'flex-end',
-    paddingTop: spacing.md,
+    paddingTop: space.md,
   },
   close: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.card,
+    width: CLOSE_SIZE,
+    height: CLOSE_SIZE,
+    borderRadius: radius.pill,
+    backgroundColor: color.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -268,142 +315,131 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingBottom: spacing.lg,
+    paddingBottom: space.lg,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    marginTop: space.lg,
+  },
+  titleBlock: {
+    flex: 1,
+  },
+  // Titre en phrase : casse normale, PAS de capitales forcées.
   title: {
-    color: colors.text,
-    fontSize: 26,
-    lineHeight: 34,
-    fontFamily: fonts.display,
-    marginTop: spacing.lg,
+    fontFamily: font.bold,
+    fontSize: TITLE_SIZE,
+    lineHeight: TITLE_LINE_HEIGHT,
+    color: color.textPrimary,
   },
   subtitle: {
-    color: colors.textMuted,
-    fontSize: 14,
-    lineHeight: 20,
-    fontFamily: fonts.body,
-    marginTop: spacing.xs,
+    ...type.body,
+    marginTop: space.xs,
   },
   benefits: {
-    marginTop: spacing.xl,
-    gap: spacing.md,
+    marginTop: space.xl,
+    gap: space.md,
   },
   benefitRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: space.sm,
   },
   benefitText: {
+    ...type.body,
     flex: 1,
-    color: colors.text,
-    fontSize: 15,
-    fontFamily: fonts.body,
+    color: color.textPrimary,
   },
   offers: {
-    marginTop: spacing.xl,
-    gap: spacing.md,
+    marginTop: space.xl,
+    gap: space.md,
   },
   offer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.card,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.lg,
+    gap: space.md,
+    padding: space.lg,
   },
   offerSelected: {
-    backgroundColor: colors.cardActive,
-    borderColor: colors.accent,
+    backgroundColor: color.surfaceAlt,
+    borderColor: color.accent,
   },
   badge: {
     position: 'absolute',
-    top: -9,
-    right: spacing.lg,
-    backgroundColor: colors.accent,
-    borderRadius: 999,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
+    top: -BADGE_LIFT,
+    right: space.lg,
+    backgroundColor: color.accent,
+    borderRadius: radius.pill,
+    paddingHorizontal: space.sm,
+    paddingVertical: space.xs / 2,
   },
   badgeLabel: {
-    color: colors.text,
-    fontSize: 10,
-    fontFamily: fonts.medium,
+    ...type.sectionLabel,
+    fontSize: BADGE_FONT_SIZE,
+    color: color.onAccent,
   },
   offerBody: {
     flex: 1,
-    gap: 2,
+    gap: space.xs / 2,
   },
   offerNameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: space.sm,
   },
   offerName: {
-    color: colors.text,
-    fontSize: 16,
-    fontFamily: fonts.medium,
+    ...type.cardTitle,
   },
   trialChip: {
-    borderWidth: 1,
-    borderColor: colors.accent,
-    borderRadius: 999,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
+    borderWidth: borderWidth.hairline,
+    borderColor: color.accent,
+    borderRadius: radius.pill,
+    paddingHorizontal: space.sm,
+    paddingVertical: space.xs / 2,
   },
   trialChipLabel: {
-    color: colors.accentLight,
-    fontSize: 10,
-    fontFamily: fonts.medium,
+    fontFamily: font.medium,
+    fontSize: CHIP_FONT_SIZE,
+    color: color.accent,
   },
   offerDetail: {
-    color: colors.textMuted,
-    fontSize: 13,
-    lineHeight: 18,
-    fontFamily: fonts.body,
+    ...type.body,
   },
-  // Valeur du prix en display — même taille et même couleur que la ligne.
+  // Valeur du prix en gras — même taille et même couleur que la ligne.
   priceInline: {
-    fontFamily: fonts.display,
+    fontFamily: font.bold,
   },
   offerPerWeek: {
-    color: colors.accentLight,
-    fontSize: 13,
-    fontFamily: fonts.display,
+    ...type.body,
+    fontFamily: font.bold,
+    color: color.accent,
   },
   error: {
-    color: colors.textMuted,
-    fontSize: 13,
-    fontFamily: fonts.body,
-    marginTop: spacing.lg,
+    ...type.body,
     textAlign: 'center',
+    marginTop: space.lg,
   },
   footer: {
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.sm,
-    gap: spacing.sm,
+    paddingTop: space.sm,
+    paddingBottom: space.sm,
+    gap: space.sm,
   },
   cancelNote: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontFamily: fonts.body,
+    ...type.meta,
     textAlign: 'center',
   },
   links: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.sm,
+    gap: space.sm,
   },
   link: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontFamily: fonts.body,
+    ...type.meta,
     textDecorationLine: 'underline',
   },
   linkSeparator: {
-    color: colors.textMuted,
-    fontSize: 12,
+    ...type.meta,
   },
 });

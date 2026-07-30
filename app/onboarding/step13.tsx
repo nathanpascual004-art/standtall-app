@@ -4,10 +4,11 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Mascot } from '@/components/Mascot';
 import { OnboardingProgress } from '@/components/OnboardingProgress';
 import { ProgressBar } from '@/components/ProgressBar';
 import { TOTAL_ONBOARDING_STEPS } from '@/lib/store';
-import { colors, fonts, spacing } from '@/lib/theme';
+import { color, space, type } from '@/theme/tokens';
 
 const MESSAGES = [
   'Analyse de ta posture…',
@@ -47,7 +48,11 @@ export default function LoaderScreen() {
       <OnboardingProgress step={13} total={TOTAL_ONBOARDING_STEPS} />
 
       <View style={styles.body}>
-        <ActivityIndicator size="large" color={colors.accentLight} />
+        <View style={styles.mascot}>
+          <Mascot state="neutral" size={88} />
+        </View>
+
+        <ActivityIndicator size="large" color={color.accent} />
 
         <View style={styles.messages}>
           {MESSAGES.map((message, index) => {
@@ -58,7 +63,7 @@ export default function LoaderScreen() {
                 <Ionicons
                   name={done ? 'checkmark-circle' : 'ellipse-outline'}
                   size={18}
-                  color={done || active ? colors.accentLight : colors.border}
+                  color={done || active ? color.accent : color.border}
                 />
                 <Text
                   style={[
@@ -82,35 +87,36 @@ export default function LoaderScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.bg,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.md,
+    backgroundColor: color.bg,
+    paddingHorizontal: space.screen,
+    paddingTop: space.md,
   },
   body: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'stretch',
-    gap: spacing.xxl,
-    paddingBottom: spacing.xxl,
+    gap: space.xxl,
+    paddingBottom: space.xxl,
+  },
+  mascot: {
+    alignItems: 'center',
   },
   messages: {
-    gap: spacing.lg,
+    gap: space.lg,
   },
   messageRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: space.md,
   },
   message: {
-    color: colors.textMuted,
-    fontSize: 15,
-    fontFamily: fonts.body,
+    ...type.body,
+    color: color.textMuted,
   },
   messageActive: {
-    color: colors.text,
-    fontFamily: fonts.medium,
+    ...type.bodyMedium,
   },
   bar: {
-    marginTop: spacing.sm,
+    marginTop: space.sm,
   },
 });

@@ -8,7 +8,6 @@ import {
   Text,
   TextInput,
   View,
-  type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -16,10 +15,7 @@ import { OnboardingProgress } from '@/components/OnboardingProgress';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { QuizOption } from '@/components/QuizOption';
 import { useOnboardingStore, type Gender } from '@/lib/store';
-import { colors, fonts, radius, spacing } from '@/lib/theme';
-
-const webNoOutline: TextStyle | null =
-  Platform.OS === 'web' ? ({ outlineStyle: 'none' } as unknown as TextStyle) : null;
+import { borderWidth, color, radius, space, type, webNoOutline } from '@/theme/tokens';
 
 const GENDERS: { value: Gender; label: string }[] = [
   { value: 'homme', label: 'Homme' },
@@ -79,7 +75,7 @@ export default function ComplementScreen() {
                 onChangeText={(text) => setTaille(text.replace(/[^0-9]/g, '').slice(0, 3))}
                 keyboardType="number-pad"
                 placeholder="Taille"
-                placeholderTextColor={colors.textMuted}
+                placeholderTextColor={color.textMuted}
               />
               <Text style={styles.unit}>cm</Text>
             </View>
@@ -93,7 +89,7 @@ export default function ComplementScreen() {
                 onChangeText={(text) => setAge(text.replace(/[^0-9]/g, '').slice(0, 3))}
                 keyboardType="number-pad"
                 placeholder="Âge"
-                placeholderTextColor={colors.textMuted}
+                placeholderTextColor={color.textMuted}
               />
               <Text style={styles.unit}>ans</Text>
             </View>
@@ -128,48 +124,42 @@ export default function ComplementScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.bg,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.md,
+    backgroundColor: color.bg,
+    paddingHorizontal: space.screen,
+    paddingTop: space.md,
   },
   flex: {
     flex: 1,
   },
   title: {
-    color: colors.text,
-    fontSize: 26,
-    lineHeight: 34,
-    fontFamily: fonts.display,
-    marginTop: spacing.xxl,
+    ...type.question,
+    marginTop: space.xxl,
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.card,
+    backgroundColor: color.surface,
     borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.lg,
-    marginTop: spacing.lg,
+    borderWidth: borderWidth.hairline,
+    borderColor: color.border,
+    paddingHorizontal: space.lg,
+    marginTop: space.lg,
   },
   input: {
     flex: 1,
-    color: colors.text,
-    fontSize: 20,
-    fontFamily: fonts.medium,
-    paddingVertical: 16,
+    ...type.statNumberSmall,
+    fontVariant: ['tabular-nums'],
+    paddingVertical: space.lg,
   },
   unit: {
-    color: colors.textMuted,
-    fontSize: 15,
-    fontFamily: fonts.body,
+    ...type.body,
   },
   options: {
-    marginTop: spacing.lg,
-    gap: 10,
+    marginTop: space.lg,
+    gap: space.md,
   },
   footer: {
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.sm,
+    paddingTop: space.sm,
+    paddingBottom: space.sm,
   },
 });

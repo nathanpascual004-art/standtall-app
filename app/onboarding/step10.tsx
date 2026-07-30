@@ -1,14 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { BrandImage } from '@/components/BrandImage';
 import { OnboardingProgress } from '@/components/OnboardingProgress';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { QuizOption } from '@/components/QuizOption';
 import { TOTAL_ONBOARDING_STEPS, useOnboardingStore } from '@/lib/store';
-import { colors, fonts, radius, spacing } from '@/lib/theme';
+import { color, space, type } from '@/theme/tokens';
 
 const PICKER_OPTIONS: ImagePicker.ImagePickerOptions = {
   mediaTypes: ['images'],
@@ -52,22 +53,25 @@ export default function ProfilePhotoScreen() {
       <View style={styles.options}>
         <QuizOption
           label="Prendre une photo de côté"
-          icon={<Ionicons name="camera-outline" size={22} color={colors.textMuted} />}
+          icon={<Ionicons name="camera-outline" size={22} color={color.textSecond} />}
           onPress={handleTakePhoto}
         />
         <QuizOption
           label="Importer une photo"
-          icon={<Ionicons name="image-outline" size={22} color={colors.textMuted} />}
+          icon={<Ionicons name="image-outline" size={22} color={color.textSecond} />}
           onPress={handlePickPhoto}
         />
       </View>
 
-      {photoUri ? (
-        <View style={styles.previewCard}>
-          <Image source={{ uri: photoUri }} style={styles.preview} />
-          <Text style={styles.previewLabel}>Photo ajoutée</Text>
-        </View>
-      ) : null}
+      {/* Zone d'aperçu : placeholder caméra tant qu'aucune photo n'est prise. */}
+      <BrandImage
+        source={photoUri ? { uri: photoUri } : null}
+        icon="camera-outline"
+        scrim={Boolean(photoUri)}
+        style={styles.preview}
+      >
+        {photoUri ? <Text style={styles.previewLabel}>Photo ajoutée</Text> : null}
+      </BrandImage>
 
       <View style={styles.footer}>
         <PrimaryButton label="Continuer" disabled={!photoUri} onPress={goNext} />
@@ -82,59 +86,39 @@ export default function ProfilePhotoScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.bg,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.md,
+    backgroundColor: color.bg,
+    paddingHorizontal: space.screen,
+    paddingTop: space.md,
   },
   title: {
-    color: colors.text,
-    fontSize: 26,
-    lineHeight: 34,
-    fontFamily: fonts.display,
-    marginTop: spacing.xxl,
+    ...type.question,
+    marginTop: space.xxl,
   },
   subtitle: {
-    color: colors.textMuted,
-    fontSize: 14,
-    lineHeight: 20,
-    fontFamily: fonts.body,
-    marginTop: spacing.sm,
+    ...type.body,
+    marginTop: space.sm,
   },
   options: {
-    marginTop: spacing.xxl,
-    gap: 10,
-  },
-  previewCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    marginTop: spacing.lg,
+    marginTop: space.xxl,
+    gap: space.md,
   },
   preview: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.accent,
+    marginTop: space.lg,
   },
   previewLabel: {
-    color: colors.accentLight,
-    fontSize: 13,
-    fontFamily: fonts.medium,
+    ...type.bodyMedium,
   },
   footer: {
     flex: 1,
     justifyContent: 'flex-end',
-    paddingBottom: spacing.sm,
-    gap: spacing.sm,
+    paddingBottom: space.sm,
+    gap: space.sm,
   },
   skip: {
     alignItems: 'center',
-    paddingVertical: spacing.md,
+    paddingVertical: space.md,
   },
   skipLabel: {
-    color: colors.textMuted,
-    fontSize: 15,
-    fontFamily: fonts.body,
+    ...type.body,
   },
 });
