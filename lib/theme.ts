@@ -1,44 +1,42 @@
 /**
- * Thème global StandTall — design premium sombre.
- * Typographie : Space Grotesk (chargée dans app/_layout.tsx).
+ * COUCHE DE COMPATIBILITÉ TEMPORAIRE — ne plus rien ajouter ici.
+ *
+ * La source de vérité du design est theme/tokens.ts. Ce fichier mappe les
+ * anciens noms vers les nouveaux tokens le temps de migrer chaque écran
+ * (import '@/theme/tokens'), puis sera supprimé.
  */
+import { color, font, radius as tokenRadius, space } from '@/theme/tokens';
 
 export const colors = {
-  bg: '#0a0d13',
-  card: '#12161e',
-  cardActive: '#16324f',
-  accent: '#2f6bd6',
-  accentLight: '#4a8fe0',
-  text: '#eef2f7',
-  textMuted: '#7d8794',
-  border: '#242b36',
-  /** Actions destructives (réinitialisation…). */
-  danger: '#d05c5c',
+  bg: color.bg,
+  card: color.surface,
+  cardActive: color.surfaceAlt,
+  accent: color.accent,
+  accentLight: color.accent,
+  text: color.textPrimary,
+  textMuted: color.textSecond,
+  border: color.border,
+  danger: color.danger,
 } as const;
 
 export const radius = {
-  card: 14,
-  button: 13,
+  card: tokenRadius.card,
+  button: tokenRadius.button,
 } as const;
 
-/**
- * display : titres d'écran + gros chiffres (stature, kcal, scores, prix).
- * medium : sous-titres, boutons, valeurs mises en avant.
- * body : labels, descriptions, paragraphes.
- */
 export const fonts = {
-  display: 'SpaceGrotesk_700Bold',
-  medium: 'SpaceGrotesk_500Medium',
-  body: 'SpaceGrotesk_400Regular',
+  display: font.bold,
+  medium: font.medium,
+  body: font.regular,
 } as const;
 
 export const spacing = {
-  xs: 4,
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
-  xxl: 28,
+  xs: space.xs,
+  sm: space.sm,
+  md: space.md,
+  lg: space.lg,
+  xl: space.xl,
+  xxl: space.xxl,
 } as const;
 
 export const theme = { colors, radius, fonts, spacing } as const;

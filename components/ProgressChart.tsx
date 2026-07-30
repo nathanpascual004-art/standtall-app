@@ -8,7 +8,7 @@ import Svg, {
   Stop,
 } from 'react-native-svg';
 
-import { colors } from '@/lib/theme';
+import { color as colors } from '@/theme/tokens';
 
 type ProgressChartProps = {
   /** Série de valeurs (au moins 2 points). */
@@ -66,7 +66,7 @@ export function ProgressChart({ data, height = 120 }: ProgressChartProps) {
           <Path d={area} fill="url(#chartFill)" />
           <Path
             d={line}
-            stroke={colors.accentLight}
+            stroke={colors.accent}
             strokeWidth={2.5}
             strokeLinecap="round"
             fill="none"
@@ -75,7 +75,7 @@ export function ProgressChart({ data, height = 120 }: ProgressChartProps) {
             cx={points[points.length - 1].x}
             cy={points[points.length - 1].y}
             r={4}
-            fill={colors.accentLight}
+            fill={colors.accent}
           />
         </Svg>
       ) : null}

@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, fonts } from '@/lib/theme';
-import { ProgressBar } from './ProgressBar';
+import { ProgressBar } from '@/components/ProgressBar';
+import { color, space, type } from '@/theme/tokens';
 
 type OnboardingProgressProps = {
   /** Étape courante (1-indexée). */
@@ -25,15 +25,15 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: space.md,
   },
   bar: {
     flex: 1,
   },
   label: {
-    color: colors.textMuted,
+    ...type.meta,
     fontSize: 11,
-    fontFamily: fonts.body,
+    color: color.textMuted,
     fontVariant: ['tabular-nums'],
   },
 });

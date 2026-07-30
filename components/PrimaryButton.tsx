@@ -1,56 +1,76 @@
-import { Pressable, StyleSheet, Text, type ViewStyle } from 'react-native';
+import { StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native';
 
-import { colors, fonts, radius } from '@/lib/theme';
+import { PressableScale } from '@/components/PressableScale';
+import { borderWidth, color, radius, space, type } from '@/theme/tokens';
 
 type PrimaryButtonProps = {
   label: string;
   onPress: () => void;
   disabled?: boolean;
-  style?: ViewStyle;
+  /** primary : fond accent. secondary : surface + hairline. */
+  variant?: 'primary' | 'secondary';
+  style?: StyleProp<ViewStyle>;
 };
 
-/** Bouton principal : fond accent, texte centré, radius 13. */
+/**
+ * CTA de l'app — libellé en capitales (via textTransform), scale 0.97 +
+ * haptique au tap (PressableScale).
+ */
 export function PrimaryButton({
   label,
   onPress,
   disabled = false,
+  variant = 'primary',
   style,
 }: PrimaryButtonProps) {
+  const secondary = variant === 'secondary';
   return (
-    <Pressable
+    <PressableScale
       onPress={onPress}
       disabled={disabled}
+      haptic="impact"
       accessibilityRole="button"
       accessibilityState={{ disabled }}
       style={({ pressed }) => [
         styles.button,
-        disabled && styles.buttonDisabled,
-        pressed && !disabled && styles.buttonPressed,
+        secondary && styles.buttonSecondary,
+        pressed && !disabled && (secondary ? styles.pressedSecondary : styles.pressedPrimary),
+        disabled && styles.disabled,
         style,
       ]}
     >
-      <Text style={styles.label}>{label}</Text>
-    </Pressable>
+      <Text style={[styles.label, secondary && styles.labelSecondary]}>{label}</Text>
+    </PressableScale>
   );
 }
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: colors.accent,
+    backgroundColor: color.accent,
     borderRadius: radius.button,
-    paddingVertical: 16,
+    paddingVertical: space.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  buttonDisabled: {
+  buttonSecondary: {
+    backgroundColor: color.surface,
+    borderWidth: borderWidth.hairline,
+    borderColor: color.border,
+  },
+  pressedPrimary: {
+    backgroundColor: color.accentPress,
+  },
+  pressedSecondary: {
+    backgroundColor: color.surfaceAlt,
+  },
+  disabled: {
     opacity: 0.4,
   },
-  buttonPressed: {
-    opacity: 0.85,
-  },
   label: {
-    color: colors.text,
-    fontSize: 16,
-    fontFamily: fonts.medium,
+    ...type.button,
+    color: color.onAccent,
+  },
+  labelSecondary: {
+    color: color.textPrimary,
   },
 });

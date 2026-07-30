@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View, type ViewProps } from 'react-native';
 
-import { colors, fonts, radius } from '@/lib/theme';
-import { Card } from './Card';
+import { Card } from '@/components/Card';
+import { borderWidth, color, radius, space, type } from '@/theme/tokens';
 
 type StatCardProps = ViewProps & {
   label: string;
@@ -15,7 +15,7 @@ type StatCardProps = ViewProps & {
   locked?: boolean;
 };
 
-/** Carte statistique : label muted 11px + valeur 24px display. */
+/** Carte statistique : label capitales + gros chiffre 700. */
 export function StatCard({ label, value, locked = false, style, ...props }: StatCardProps) {
   return (
     <Card style={[styles.card, locked && styles.cardLocked, style]} {...props}>
@@ -24,7 +24,7 @@ export function StatCard({ label, value, locked = false, style, ...props }: Stat
       {locked ? (
         <View style={styles.lockOverlay} pointerEvents="none">
           <View style={styles.lockBadge}>
-            <Ionicons name="lock-closed" size={16} color={colors.text} />
+            <Ionicons name="lock-closed" size={16} color={color.textPrimary} />
           </View>
         </View>
       ) : null}
@@ -34,31 +34,29 @@ export function StatCard({ label, value, locked = false, style, ...props }: Stat
 
 const styles = StyleSheet.create({
   card: {
-    gap: 4,
+    gap: space.xs,
   },
   cardLocked: {
-    borderWidth: 1,
-    borderColor: colors.accent,
+    borderWidth: borderWidth.hairline,
+    borderColor: color.accent,
   },
   label: {
-    color: colors.textMuted,
-    fontSize: 11,
-    fontFamily: fonts.body,
+    ...type.sectionLabel,
+    fontSize: 10,
   },
   value: {
-    color: colors.text,
-    fontSize: 24,
-    fontFamily: fonts.display,
+    ...type.statNumberSmall,
+    fontVariant: ['tabular-nums'],
   },
-  // Flou « réel » sans dépendance : texte transparent + ombre portée rayon 7.
+  // Flou du masque (jamais de la vraie valeur — voir prop `value`).
   valueBlurred: {
     color: 'transparent',
-    textShadowColor: 'rgba(238, 242, 247, 0.9)',
+    textShadowColor: color.textSecond,
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 7,
   },
-  // Surcouche semi-opaque (ton du fond) : le contenu sous le cadenas reste
-  // illisible quelle que soit la taille d'écran.
+  // Surcouche semi-opaque : le contenu sous le cadenas reste illisible
+  // quelle que soit la taille d'écran.
   lockOverlay: {
     position: 'absolute',
     top: 0,
@@ -67,14 +65,14 @@ const styles = StyleSheet.create({
     bottom: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(10, 13, 19, 0.45)',
+    backgroundColor: color.lockVeil,
     borderRadius: radius.card,
   },
   lockBadge: {
     width: 32,
     height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(10, 13, 19, 0.55)',
+    borderRadius: radius.pill,
+    backgroundColor: color.scrim,
     alignItems: 'center',
     justifyContent: 'center',
   },

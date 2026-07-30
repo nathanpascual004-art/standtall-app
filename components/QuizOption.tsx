@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, fonts, radius } from '@/lib/theme';
+import { PressableScale } from '@/components/PressableScale';
+import { borderWidth, color, radius, space, type } from '@/theme/tokens';
 
 type QuizOptionProps = {
   label: string;
@@ -11,10 +12,10 @@ type QuizOptionProps = {
   icon?: ReactNode;
 };
 
-/** Option tappable du quiz — état sélectionné : bordure accent + fond cardActive. */
+/** Option tappable du quiz — sélection : bordure accent + fond surfaceAlt. */
 export function QuizOption({ label, selected = false, onPress, icon }: QuizOptionProps) {
   return (
-    <Pressable
+    <PressableScale
       onPress={onPress}
       accessibilityRole="radio"
       accessibilityState={{ selected }}
@@ -26,7 +27,7 @@ export function QuizOption({ label, selected = false, onPress, icon }: QuizOptio
     >
       {icon ? <View style={styles.icon}>{icon}</View> : null}
       <Text style={[styles.label, selected && styles.labelSelected]}>{label}</Text>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -34,30 +35,30 @@ const styles = StyleSheet.create({
   option: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.card,
+    backgroundColor: color.surface,
     borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
+    borderWidth: borderWidth.hairline,
+    borderColor: color.border,
+    paddingVertical: space.lg,
+    paddingHorizontal: space.lg,
   },
   optionSelected: {
-    backgroundColor: colors.cardActive,
-    borderColor: colors.accent,
+    backgroundColor: color.surfaceAlt,
+    borderColor: color.accent,
   },
   optionPressed: {
-    opacity: 0.85,
+    opacity: 0.9,
   },
   icon: {
-    marginRight: 14,
+    marginRight: space.md,
   },
   label: {
     flex: 1,
-    color: colors.text,
+    ...type.bodyMedium,
     fontSize: 15,
-    fontFamily: fonts.body,
+    color: color.textPrimary,
   },
   labelSelected: {
-    fontFamily: fonts.medium,
+    fontFamily: type.cardTitle.fontFamily,
   },
 });

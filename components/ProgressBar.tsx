@@ -1,6 +1,6 @@
 import { StyleSheet, View, type ViewStyle } from 'react-native';
 
-import { colors } from '@/lib/theme';
+import { color } from '@/theme/tokens';
 
 type ProgressBarProps = {
   /** Progression entre 0 et 1. */
@@ -9,7 +9,7 @@ type ProgressBarProps = {
   style?: ViewStyle;
 };
 
-/** Barre de progression : track `border`, remplissage `accent`. */
+/** Barre de progression : rail `railOff`, remplissage `accent`. */
 export function ProgressBar({ progress, height = 6, style }: ProgressBarProps) {
   const clamped = Math.min(1, Math.max(0, progress));
 
@@ -27,11 +27,11 @@ export function ProgressBar({ progress, height = 6, style }: ProgressBarProps) {
 
 const styles = StyleSheet.create({
   track: {
-    backgroundColor: colors.border,
+    backgroundColor: color.railOff,
     overflow: 'hidden',
   },
   fill: {
     height: '100%',
-    backgroundColor: colors.accent,
+    backgroundColor: color.accent,
   },
 });
