@@ -1,13 +1,29 @@
-// Supabase Edge Function — analyse d'un repas en photo via l'API vision.
+// Supabase Edge Function — scan repas fiabilisé.
 //
-// La clé de l'API vision ne vit QUE côté serveur (secret Supabase),
-// jamais dans le code ni dans l'app :
-//   Déployer avec `supabase functions deploy scan-meal`
-//   et définir le secret avec `supabase secrets set VISION_API_KEY=...`
+// Le modèle de vision IDENTIFIE le plat, les ingrédients et les portions ;
+// les MACROS viennent de la base nutrition_foods (CIQUAL) via match_food().
+// Produits emballés : chemin code-barres → Open Food Facts (quasi exact).
 //
-// Reçoit  : POST { imageBase64: string, mediaType?: 'image/jpeg' | 'image/png' }
-// Renvoie : { nom, calories, proteinesG, glucidesG, lipidesG, confiance }
-//           (même schéma que lib/foodScan.ts côté app)
+// La clé de l'API vision ne vit QUE côté serveur (secret Supabase) :
+//   supabase functions deploy scan-meal
+//   supabase secrets set VISION_API_KEY=...
+// (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY sont injectées automatiquement.)
+//
+// Reçoit  : POST { imageBase64?, mediaType?, userHint?, barcode? }
+// Renvoie : { dish, totals, items[], overallConfidence, source }
+//           + champs hérités (nom, calories, …) pour un client pas à jour.
+
+import {
+  buildItem,
+  computeTotals,
+  legacyFields,
+  normFoodName,
+  offToResult,
+  overallConfidence,
+  parseVisionJson,
+  type FoodMatch,
+  type ScanResult,
+} from './logic.ts';
 
 // Renvoyés sur TOUTES les réponses (succès, erreurs, preflight) via json().
 const CORS_HEADERS = {
@@ -19,26 +35,61 @@ const CORS_HEADERS = {
 
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 const MODEL = 'claude-opus-5';
+const OFF_URL = 'https://world.openfoodfacts.org/api/v2/product';
+const VISION_TIMEOUT_MS = 30000;
+const OFF_TIMEOUT_MS = 10000;
+const DB_TIMEOUT_MS = 8000;
 
-/** Schéma JSON imposé à l'API — la réponse est STRICTEMENT ce JSON. */
-const MEAL_SCHEMA = {
+/** Schéma imposé à la passe vision — identifier, PAS chiffrer les macros.
+ *  Les champs *100Est ne servent que de repli si la base ne matche pas. */
+const VISION_SCHEMA = {
   type: 'object',
   properties: {
-    nom: { type: 'string', description: 'Nom court du plat, en français' },
-    calories: { type: 'number', description: 'Calories totales estimées (kcal)' },
-    proteinesG: { type: 'number', description: 'Protéines en grammes' },
-    glucidesG: { type: 'number', description: 'Glucides en grammes' },
-    lipidesG: { type: 'number', description: 'Lipides en grammes' },
-    confiance: { type: 'number', description: 'Confiance de 0 à 1' },
+    dish: { type: 'string', description: 'Nom court du plat, en français' },
+    ingredients: {
+      type: 'array',
+      maxItems: 10,
+      items: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Libellé lisible (ex. « Filet de poulet grillé »)' },
+          canonical: {
+            type: 'string',
+            description:
+              'Aliment générique simple pour une base nutritionnelle française (ex. « riz blanc cuit », « blanc de poulet cuit »)',
+          },
+          grams: { type: 'number', description: 'Portion estimée en grammes' },
+          confidence: { type: 'number', description: 'Confiance 0-1 sur cet ingrédient' },
+          kcal100Est: { type: 'number', description: 'Estimation kcal/100 g (repli seulement)' },
+          protein100Est: { type: 'number', description: 'Estimation protéines g/100 g (repli)' },
+          carb100Est: { type: 'number', description: 'Estimation glucides g/100 g (repli)' },
+          fat100Est: { type: 'number', description: 'Estimation lipides g/100 g (repli)' },
+        },
+        required: [
+          'name', 'canonical', 'grams', 'confidence',
+          'kcal100Est', 'protein100Est', 'carb100Est', 'fat100Est',
+        ],
+        additionalProperties: false,
+      },
+    },
   },
-  required: ['nom', 'calories', 'proteinesG', 'glucidesG', 'lipidesG', 'confiance'],
+  required: ['dish', 'ingredients'],
   additionalProperties: false,
 };
 
-const PROMPT =
-  "Analyse la photo de ce repas. Estime le plat et ses macros pour la portion visible. " +
-  'Réponds uniquement avec le JSON demandé : nom (court, en français), calories (kcal), ' +
-  'proteinesG, glucidesG, lipidesG (grammes), et confiance (0 à 1 selon la lisibilité de la photo).';
+const VISION_PROMPT = `Analyse la photo de ce repas.
+
+Méthode :
+1. Identifie le plat et chaque ingrédient visible.
+2. Raisonne d'abord sur les PORTIONS en te servant de l'assiette, des couverts et des repères visibles comme échelle, PUIS estime les grammes de chaque ingrédient.
+3. Pour "canonical", donne un nom d'aliment SIMPLE et GÉNÉRIQUE destiné à matcher une base nutritionnelle française (CIQUAL) : « riz blanc cuit », « blanc de poulet cuit », « brocoli cuit », « pain baguette »…
+4. Donne une confiance 0-1 par ingrédient.
+5. Les champs kcal100Est/protein100Est/carb100Est/fat100Est sont des estimations pour 100 g utilisées seulement en repli — remplis-les au mieux, sans les gonfler.
+
+Réponds STRICTEMENT avec le JSON demandé, sans texte autour.
+
+Exemple de sortie attendue :
+{"dish":"Poulet rôti et haricots verts","ingredients":[{"name":"Cuisse de poulet rôtie","canonical":"cuisse de poulet cuite","grams":150,"confidence":0.85,"kcal100Est":215,"protein100Est":26,"carb100Est":0,"fat100Est":12},{"name":"Haricots verts","canonical":"haricot vert cuit","grams":120,"confidence":0.8,"kcal100Est":33,"protein100Est":1.9,"carb100Est":4.6,"fat100Est":0.4}]}`;
 
 function json(payload: unknown, status = 200): Response {
   return new Response(JSON.stringify(payload), {
@@ -47,47 +98,175 @@ function json(payload: unknown, status = 200): Response {
   });
 }
 
-function clampNumber(value: unknown, min: number, max: number): number | null {
-  const parsed = typeof value === 'number' ? value : Number(value);
-  if (!Number.isFinite(parsed)) return null;
-  return Math.min(max, Math.max(min, parsed));
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  timeoutMs: number,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
-/** Parse défensif de la réponse du modèle — null si inexploitable. */
-function parseMeal(raw: string) {
+/** Passe 2 (déterministe) : meilleure correspondance base via match_food. */
+async function matchFood(canonical: string): Promise<FoodMatch> {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!supabaseUrl || !serviceKey) return null; // pas de base → repli modèle
   try {
-    const data = JSON.parse(raw) as Record<string, unknown>;
-    const nom = typeof data.nom === 'string' ? data.nom.trim() : '';
-    const calories = clampNumber(data.calories, 0, 5000);
-    const proteinesG = clampNumber(data.proteinesG, 0, 500);
-    const glucidesG = clampNumber(data.glucidesG, 0, 1000);
-    const lipidesG = clampNumber(data.lipidesG, 0, 500);
-    const confiance = clampNumber(data.confiance, 0, 1);
-    if (!nom || calories === null || proteinesG === null || glucidesG === null || lipidesG === null) {
-      return null;
-    }
-    return {
-      nom,
-      calories: Math.round(calories),
-      proteinesG: Math.round(proteinesG),
-      glucidesG: Math.round(glucidesG),
-      lipidesG: Math.round(lipidesG),
-      confiance: Math.round((confiance ?? 0.5) * 100) / 100,
+    const response = await fetchWithTimeout(
+      `${supabaseUrl}/rest/v1/rpc/match_food`,
+      {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          apikey: serviceKey,
+          authorization: `Bearer ${serviceKey}`,
+        },
+        body: JSON.stringify({ query: normFoodName(canonical) }),
+      },
+      DB_TIMEOUT_MS,
+    );
+    if (!response.ok) return null;
+    const rows = (await response.json()) as Record<string, unknown>[];
+    const row = Array.isArray(rows) ? rows[0] : null;
+    if (!row) return null;
+    // PostgREST renvoie les numeric en chaînes — conversion explicite.
+    const match = {
+      name: String(row.name ?? ''),
+      kcal_100g: Number(row.kcal_100g),
+      protein_100g: Number(row.protein_100g),
+      carb_100g: Number(row.carb_100g),
+      fat_100g: Number(row.fat_100g),
+      sim: Number(row.sim),
     };
+    return Number.isFinite(match.kcal_100g) && Number.isFinite(match.sim) ? match : null;
   } catch {
     return null;
   }
 }
 
+/** Chemin A — produit emballé via Open Food Facts. */
+async function handleBarcode(barcode: string): Promise<Response> {
+  if (!/^\d{6,14}$/.test(barcode)) {
+    return json({ error: 'barcode_invalid' }, 400);
+  }
+  let payload: { status?: number; product?: Parameters<typeof offToResult>[0] };
+  try {
+    const response = await fetchWithTimeout(
+      `${OFF_URL}/${barcode}.json?fields=product_name,serving_quantity,nutriments`,
+      { headers: { 'user-agent': 'StandTall/1.0 (scan repas)' } },
+      OFF_TIMEOUT_MS,
+    );
+    if (!response.ok && response.status !== 404) {
+      return json({ error: 'off_unreachable' }, 502);
+    }
+    payload = await response.json();
+  } catch {
+    return json({ error: 'off_unreachable' }, 502);
+  }
+
+  if (payload.status !== 1 || !payload.product) {
+    return json({ error: 'barcode_not_found' }, 404);
+  }
+  const result = offToResult(payload.product, `Produit ${barcode}`);
+  if (!result) {
+    return json({ error: 'barcode_no_nutriments' }, 404);
+  }
+  return json({ ...result, ...legacyFields(result) });
+}
+
+/** Chemin B — photo : passe vision (identification) puis chiffrage base. */
+async function handlePhoto(
+  apiKey: string,
+  imageBase64: string,
+  mediaType: 'image/jpeg' | 'image/png',
+  userHint: string | null,
+): Promise<Response> {
+  const hintBlock = userHint
+    ? `\n\nIndication de l'utilisateur (PRIORITAIRE pour l'identification et les portions) : « ${userHint.slice(0, 300)} »`
+    : '';
+
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(
+      ANTHROPIC_URL,
+      {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: MODEL,
+          max_tokens: 2048,
+          output_config: {
+            effort: 'low',
+            format: { type: 'json_schema', schema: VISION_SCHEMA },
+          },
+          messages: [
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'image',
+                  source: { type: 'base64', media_type: mediaType, data: imageBase64 },
+                },
+                { type: 'text', text: VISION_PROMPT + hintBlock },
+              ],
+            },
+          ],
+        }),
+      },
+      VISION_TIMEOUT_MS,
+    );
+  } catch {
+    return json({ error: 'vision_api_unreachable' }, 502);
+  }
+  if (!response.ok) {
+    return json({ error: 'vision_api_error' }, 502);
+  }
+
+  const payload = (await response.json()) as {
+    stop_reason?: string;
+    content?: { type: string; text?: string }[];
+  };
+  if (payload.stop_reason === 'refusal') {
+    return json({ error: 'analysis_refused' }, 422);
+  }
+  const text = payload.content?.find((block) => block.type === 'text')?.text;
+  const vision = text ? parseVisionJson(text) : null;
+  if (!vision) {
+    return json({ error: 'analysis_failed' }, 502);
+  }
+
+  // Passe 2 — chiffrage déterministe : une requête base par ingrédient
+  // (indexée trigram, quasi gratuite), estimation modèle en repli.
+  const matches = await Promise.all(
+    vision.ingredients.map((ingredient) => matchFood(ingredient.canonical)),
+  );
+  const items = vision.ingredients.map((ingredient, index) =>
+    buildItem(ingredient, matches[index]),
+  );
+
+  const result: ScanResult = {
+    dish: vision.dish,
+    totals: computeTotals(items),
+    items,
+    overallConfidence: overallConfidence(items),
+    source: 'photo',
+  };
+  return json({ ...result, ...legacyFields(result) });
+}
+
 async function handle(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
     return json({ error: 'method_not_allowed' }, 405);
-  }
-
-  const apiKey = Deno.env.get('VISION_API_KEY');
-  if (!apiKey) {
-    // Secret non défini : `supabase secrets set VISION_API_KEY=...`
-    return json({ error: 'vision_api_key_missing' }, 500);
   }
 
   let body: Record<string, unknown>;
@@ -97,66 +276,29 @@ async function handle(req: Request): Promise<Response> {
     return json({ error: 'invalid_json' }, 400);
   }
 
+  const barcode = typeof body.barcode === 'string' ? body.barcode.trim() : '';
+  if (barcode) {
+    return handleBarcode(barcode);
+  }
+
+  const apiKey = Deno.env.get('VISION_API_KEY');
+  if (!apiKey) {
+    // Secret non défini : `supabase secrets set VISION_API_KEY=...`
+    return json({ error: 'vision_api_key_missing' }, 500);
+  }
+
   const imageBase64 = body.imageBase64;
   if (typeof imageBase64 !== 'string' || imageBase64.length === 0) {
-    return json({ error: 'image_required' }, 400);
+    return json({ error: 'image_or_barcode_required' }, 400);
   }
   if (imageBase64.length > 8_000_000) {
     return json({ error: 'image_too_large' }, 413);
   }
   const mediaType = body.mediaType === 'image/png' ? 'image/png' : 'image/jpeg';
+  const userHint =
+    typeof body.userHint === 'string' && body.userHint.trim() ? body.userHint.trim() : null;
 
-  try {
-    const response = await fetch(ANTHROPIC_URL, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: 1024,
-        output_config: {
-          effort: 'low',
-          format: { type: 'json_schema', schema: MEAL_SCHEMA },
-        },
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'image',
-                source: { type: 'base64', media_type: mediaType, data: imageBase64 },
-              },
-              { type: 'text', text: PROMPT },
-            ],
-          },
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      return json({ error: 'vision_api_error' }, 502);
-    }
-
-    const payload = (await response.json()) as {
-      stop_reason?: string;
-      content?: { type: string; text?: string }[];
-    };
-    if (payload.stop_reason === 'refusal') {
-      return json({ error: 'analysis_refused' }, 422);
-    }
-
-    const text = payload.content?.find((block) => block.type === 'text')?.text;
-    const meal = text ? parseMeal(text) : null;
-    if (!meal) {
-      return json({ error: 'analysis_failed' }, 502);
-    }
-    return json(meal);
-  } catch {
-    return json({ error: 'vision_api_unreachable' }, 502);
-  }
+  return handlePhoto(apiKey, imageBase64, mediaType, userHint);
 }
 
 Deno.serve(async (req) => {
