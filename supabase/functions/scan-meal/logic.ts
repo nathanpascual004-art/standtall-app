@@ -68,6 +68,25 @@ const clamp = (v: unknown, min: number, max: number, fallback = 0): number => {
   return Math.min(max, Math.max(min, n));
 };
 
+/** Formats d'image acceptés par l'API vision. */
+export type ImageMediaType = 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
+
+/**
+ * Détecte le format RÉEL de l'image depuis ses premiers octets (encodés
+ * base64). Un media_type déclaré qui ne correspond pas aux octets fait
+ * rejeter la requête vision par un 400 immédiat — le web envoie parfois
+ * du HEIC ou du WebP étiquetés « image/jpeg ». 'heic' = conteneur
+ * ISO-BMFF (HEIC/HEIF/AVIF…), non supporté par l'API. null = inconnu.
+ */
+export function sniffImageMediaType(base64: string): ImageMediaType | 'heic' | null {
+  if (base64.startsWith('/9j/')) return 'image/jpeg'; // FF D8 FF
+  if (base64.startsWith('iVBOR')) return 'image/png'; // 89 50 4E 47
+  if (base64.startsWith('R0lGOD')) return 'image/gif'; // GIF8
+  if (base64.startsWith('UklGR')) return 'image/webp'; // RIFF
+  if (base64.startsWith('AAAA')) return 'heic'; // 00 00 00 xx + « ftyp »
+  return null;
+}
+
 /** Même convention que public.norm_food_name (lower + sans accents). */
 export function normFoodName(s: string): string {
   return s

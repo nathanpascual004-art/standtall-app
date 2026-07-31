@@ -21,7 +21,9 @@ import {
   offToResult,
   overallConfidence,
   parseVisionJson,
+  sniffImageMediaType,
   type FoodMatch,
+  type ImageMediaType,
   type ScanResult,
 } from './logic.ts';
 
@@ -34,7 +36,10 @@ const CORS_HEADERS = {
 };
 
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
-const MODEL = 'claude-opus-5';
+// Sonnet 5 : largement suffisant pour identifier plat + portions, et
+// nettement moins cher qu'Opus pour un scan répété. Mêmes restrictions
+// API que les modèles 5 : pas de sampling non par défaut, pas de prefill.
+const MODEL = 'claude-sonnet-5';
 const OFF_URL = 'https://world.openfoodfacts.org/api/v2/product';
 const VISION_TIMEOUT_MS = 30000;
 const OFF_TIMEOUT_MS = 10000;
@@ -186,7 +191,7 @@ async function handleBarcode(barcode: string): Promise<Response> {
 async function handlePhoto(
   apiKey: string,
   imageBase64: string,
-  mediaType: 'image/jpeg' | 'image/png',
+  mediaType: ImageMediaType,
   userHint: string | null,
 ): Promise<Response> {
   const hintBlock = userHint
@@ -207,8 +212,9 @@ async function handlePhoto(
         body: JSON.stringify({
           model: MODEL,
           // Le thinking (actif par défaut sur ce modèle) compte dans
-          // max_tokens : marge large pour ne pas tronquer le JSON.
-          max_tokens: 6000,
+          // max_tokens, et le tokenizer de Sonnet 5 est ~30 % plus dense :
+          // marge large pour ne pas tronquer le JSON (~800 tokens utiles).
+          max_tokens: 8000,
           output_config: {
             effort: 'low',
             format: { type: 'json_schema', schema: VISION_SCHEMA },
@@ -305,10 +311,23 @@ async function handle(req: Request): Promise<Response> {
   if (typeof imageBase64 !== 'string' || imageBase64.length === 0) {
     return json({ error: 'image_or_barcode_required' }, 400);
   }
-  if (imageBase64.length > 8_000_000) {
-    return json({ error: 'image_too_large' }, 413);
+  // L'API vision refuse les images > 5 Mo (400 immédiat) : on borne AVANT
+  // l'appel, avec une erreur claire côté client. 4/3 = ratio base64.
+  const approxBytes = Math.floor((imageBase64.length * 3) / 4);
+  if (approxBytes > 5_000_000) {
+    return json({ error: 'image_too_large', maxBytes: 5_000_000, bytes: approxBytes }, 413);
   }
-  const mediaType = body.mediaType === 'image/png' ? 'image/png' : 'image/jpeg';
+  // Le format DÉTECTÉ dans les octets prime sur le format déclaré : un
+  // media_type qui ne correspond pas aux octets = 400 immédiat côté API.
+  const declared: ImageMediaType = body.mediaType === 'image/png' ? 'image/png' : 'image/jpeg';
+  const sniffed = sniffImageMediaType(imageBase64);
+  if (sniffed === 'heic') {
+    return json(
+      { error: 'image_format_unsupported', detail: 'HEIC/HEIF non supporté — réencode en JPEG ou PNG.' },
+      415,
+    );
+  }
+  const mediaType = sniffed ?? declared;
   const userHint =
     typeof body.userHint === 'string' && body.userHint.trim() ? body.userHint.trim() : null;
 
