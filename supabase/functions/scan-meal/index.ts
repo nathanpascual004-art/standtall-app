@@ -47,8 +47,10 @@ const VISION_SCHEMA = {
   properties: {
     dish: { type: 'string', description: 'Nom court du plat, en français' },
     ingredients: {
+      // Pas de maxItems : les contraintes de tableau ne sont pas supportées
+      // par les structured outputs (400) — la limite est dans le prompt et
+      // parseVisionJson tronque à MAX_INGREDIENTS de toute façon.
       type: 'array',
-      maxItems: 10,
       items: {
         type: 'object',
         properties: {
@@ -80,7 +82,7 @@ const VISION_SCHEMA = {
 const VISION_PROMPT = `Analyse la photo de ce repas.
 
 Méthode :
-1. Identifie le plat et chaque ingrédient visible.
+1. Identifie le plat et chaque ingrédient visible (10 ingrédients maximum, les principaux).
 2. Raisonne d'abord sur les PORTIONS en te servant de l'assiette, des couverts et des repères visibles comme échelle, PUIS estime les grammes de chaque ingrédient.
 3. Pour "canonical", donne un nom d'aliment SIMPLE et GÉNÉRIQUE destiné à matcher une base nutritionnelle française (CIQUAL) : « riz blanc cuit », « blanc de poulet cuit », « brocoli cuit », « pain baguette »…
 4. Donne une confiance 0-1 par ingrédient.
@@ -204,7 +206,9 @@ async function handlePhoto(
         },
         body: JSON.stringify({
           model: MODEL,
-          max_tokens: 2048,
+          // Le thinking (actif par défaut sur ce modèle) compte dans
+          // max_tokens : marge large pour ne pas tronquer le JSON.
+          max_tokens: 6000,
           output_config: {
             effort: 'low',
             format: { type: 'json_schema', schema: VISION_SCHEMA },
@@ -229,7 +233,17 @@ async function handlePhoto(
     return json({ error: 'vision_api_unreachable' }, 502);
   }
   if (!response.ok) {
-    return json({ error: 'vision_api_error' }, 502);
+    // Diagnostic TEMPORAIRE : logge le vrai status + corps renvoyé par
+    // l'API vision (401 clé invalide, 404 modèle inconnu, 400 requête…)
+    // pour qu'il apparaisse dans les logs Supabase de la fonction.
+    const detail = await response.text().catch(() => '(corps illisible)');
+    console.error(
+      `[scan-meal] vision API HTTP ${response.status} — ${detail.slice(0, 1000)}`,
+    );
+    return json(
+      { error: 'vision_api_error', status: response.status, detail: detail.slice(0, 500) },
+      502,
+    );
   }
 
   const payload = (await response.json()) as {
