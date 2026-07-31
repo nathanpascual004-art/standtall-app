@@ -70,6 +70,8 @@ type OnboardingState = {
   /** true une fois le store rechargé depuis le disque (hydratation). */
   hasHydrated: boolean;
   answers: QuizAnswers;
+  /** Code de parrainage validé à l'onboarding (affiliation) — optionnel. */
+  referralCode?: string;
   /** Passe à true à la fin du flow (reveal/paywall) — débloque les tabs. */
   onboardingDone: boolean;
   /** Séances complétées, par clé du jour : { "2026-07-28": ["redressement-base"] }. */
@@ -85,6 +87,7 @@ type OnboardingState = {
   favoriteMeals: SavedMeal[];
   setHasHydrated: (value: boolean) => void;
   setAnswer: <K extends keyof QuizAnswers>(key: K, value: QuizAnswers[K]) => void;
+  setReferralCode: (code: string | undefined) => void;
   completeOnboarding: () => void;
   completeSession: (sessionId: string) => void;
   setNutritionDraft: (patch: Partial<NutritionProfile>) => void;
@@ -105,6 +108,7 @@ type OnboardingState = {
 type PersistedState = Pick<
   OnboardingState,
   | 'answers'
+  | 'referralCode'
   | 'onboardingDone'
   | 'completedSessions'
   | 'nutritionProfile'
@@ -142,6 +146,7 @@ export const useOnboardingStore = create<OnboardingState>()(
       setHasHydrated: (value) => set({ hasHydrated: value }),
       setAnswer: (key, value) =>
         set((state) => ({ answers: { ...state.answers, [key]: value } })),
+      setReferralCode: (code) => set({ referralCode: code }),
       completeOnboarding: () => set({ onboardingDone: true }),
       completeSession: (sessionId) =>
         set((state) => {
@@ -187,6 +192,7 @@ export const useOnboardingStore = create<OnboardingState>()(
       reset: () =>
         set({
           answers: {},
+          referralCode: undefined,
           onboardingDone: false,
           completedSessions: {},
           nutritionDraft: {},
@@ -204,6 +210,7 @@ export const useOnboardingStore = create<OnboardingState>()(
       ),
       partialize: (state): PersistedState => ({
         answers: state.answers,
+        referralCode: state.referralCode,
         onboardingDone: state.onboardingDone,
         completedSessions: state.completedSessions,
         nutritionProfile: state.nutritionProfile,

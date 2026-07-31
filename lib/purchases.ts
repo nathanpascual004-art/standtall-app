@@ -16,6 +16,7 @@ import Purchases, {
 } from 'react-native-purchases';
 
 import { REVENUECAT_ANDROID_KEY, REVENUECAT_IOS_KEY } from './config';
+import { useOnboardingStore } from './store';
 
 /** Entitlement RevenueCat qui débloque l'app. */
 export const ENTITLEMENT_PRO = 'pro';
@@ -39,6 +40,30 @@ export function initPurchases(): void {
 
   Purchases.configure({ apiKey });
   configured = true;
+
+  // Re-pose le code de parrainage persisté (affiliation) à chaque
+  // démarrage : l'attribut doit être en place AVANT le premier achat
+  // pour que le webhook puisse attribuer la vente.
+  const applyStoredCode = () => {
+    const code = useOnboardingStore.getState().referralCode;
+    if (code) void setReferralAttribute(code);
+  };
+  if (useOnboardingStore.getState().hasHydrated) applyStoredCode();
+  else useOnboardingStore.persist.onFinishHydration(applyStoredCode);
+}
+
+/**
+ * Pose le code de parrainage en subscriber attribute RevenueCat
+ * (`referral_code`) — lu ensuite par le webhook dans chaque événement
+ * d'achat. Sans RevenueCat configuré (web / préview), no-op silencieux.
+ */
+export async function setReferralAttribute(code: string): Promise<void> {
+  if (!configured) return;
+  try {
+    await Purchases.setAttributes({ referral_code: code.trim().toUpperCase() });
+  } catch {
+    // Non bloquant : l'attribut sera reposé au prochain démarrage.
+  }
 }
 
 export function isConfigured(): boolean {

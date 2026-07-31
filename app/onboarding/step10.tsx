@@ -1,15 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BrandImage } from '@/components/BrandImage';
 import { OnboardingProgress } from '@/components/OnboardingProgress';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { QuizOption } from '@/components/QuizOption';
+import { setReferralAttribute } from '@/lib/purchases';
+import { normalizeReferralCode, validateReferralCode } from '@/lib/referral';
 import { TOTAL_ONBOARDING_STEPS, useOnboardingStore } from '@/lib/store';
-import { color, space, type } from '@/theme/tokens';
+import { borderWidth, color, radius, space, type, webNoOutline } from '@/theme/tokens';
 
 const PICKER_OPTIONS: ImagePicker.ImagePickerOptions = {
   mediaTypes: ['images'],
@@ -24,8 +27,37 @@ export default function ProfilePhotoScreen() {
   const router = useRouter();
   const photoUri = useOnboardingStore((state) => state.answers.profilePhotoUri);
   const setAnswer = useOnboardingStore((state) => state.setAnswer);
+  const storedCode = useOnboardingStore((state) => state.referralCode);
+  const setReferralCode = useOnboardingStore((state) => state.setReferralCode);
 
-  const goNext = () => router.push('/onboarding/step11');
+  // Champ « code de parrainage » replié par défaut — optionnel, jamais bloquant.
+  const [codeOpen, setCodeOpen] = useState(Boolean(storedCode));
+  const [rawCode, setRawCode] = useState(storedCode ?? '');
+  const [codeState, setCodeState] = useState<'idle' | 'checking' | 'invalid'>('idle');
+
+  /** Valide le code éventuel puis avance. Ne bloque JAMAIS l'onboarding. */
+  const goNext = async () => {
+    const code = normalizeReferralCode(rawCode);
+    if (!code || codeState === 'invalid') {
+      // Champ vide, ou code déjà signalé inconnu : on continue sans code.
+      setReferralCode(undefined);
+      router.push('/onboarding/step11');
+      return;
+    }
+    setCodeState('checking');
+    const valid = await validateReferralCode(code);
+    if (valid === false) {
+      // Code inconnu : petit message, l'utilisateur corrige ou continue sans.
+      setCodeState('invalid');
+      return;
+    }
+    // valid === null (hors-ligne / non configuré) : on garde le code sans
+    // bloquer — un code réellement inconnu sera ignoré par le serveur.
+    setCodeState('idle');
+    setReferralCode(code);
+    void setReferralAttribute(code);
+    router.push('/onboarding/step11');
+  };
 
   const handleTakePhoto = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
@@ -73,9 +105,53 @@ export default function ProfilePhotoScreen() {
         {photoUri ? <Text style={styles.previewLabel}>Photo ajoutée</Text> : null}
       </BrandImage>
 
+      {/* Code de parrainage (optionnel) — replié tant que non utilisé. */}
+      {codeOpen ? (
+        <View style={styles.referralBlock}>
+          <Text style={styles.referralLabel}>Code de parrainage (optionnel)</Text>
+          <TextInput
+            style={[styles.referralInput, webNoOutline]}
+            value={rawCode}
+            onChangeText={(text) => {
+              setRawCode(text.toUpperCase());
+              setCodeState('idle');
+            }}
+            placeholder="EX. JULES23"
+            placeholderTextColor={color.textMuted}
+            autoCapitalize="characters"
+            autoCorrect={false}
+            maxLength={24}
+            accessibilityLabel="Code de parrainage"
+          />
+          {codeState === 'invalid' ? (
+            <Text style={styles.referralHint}>
+              Code inconnu — corrige-le, ou continue sans.
+            </Text>
+          ) : null}
+        </View>
+      ) : (
+        <Pressable
+          onPress={() => setCodeOpen(true)}
+          accessibilityRole="button"
+          style={styles.referralToggle}
+        >
+          <Ionicons name="gift-outline" size={16} color={color.textSecond} />
+          <Text style={styles.referralToggleLabel}>J'ai un code de parrainage</Text>
+        </Pressable>
+      )}
+
       <View style={styles.footer}>
-        <PrimaryButton label="Continuer" disabled={!photoUri} onPress={goNext} />
-        <Pressable onPress={goNext} accessibilityRole="button" style={styles.skip}>
+        <PrimaryButton
+          label={codeState === 'checking' ? 'Vérification…' : 'Continuer'}
+          disabled={!photoUri || codeState === 'checking'}
+          onPress={goNext}
+        />
+        <Pressable
+          onPress={goNext}
+          disabled={codeState === 'checking'}
+          accessibilityRole="button"
+          style={styles.skip}
+        >
           <Text style={styles.skipLabel}>Passer</Text>
         </Pressable>
       </View>
@@ -107,6 +183,39 @@ const styles = StyleSheet.create({
   },
   previewLabel: {
     ...type.bodyMedium,
+  },
+  referralToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: space.xs,
+    marginTop: space.lg,
+    paddingVertical: space.sm,
+  },
+  referralToggleLabel: {
+    ...type.meta,
+    color: color.textSecond,
+  },
+  referralBlock: {
+    marginTop: space.lg,
+    gap: space.xs,
+  },
+  referralLabel: {
+    ...type.meta,
+  },
+  referralInput: {
+    ...type.bodyMedium,
+    backgroundColor: color.surface,
+    borderRadius: radius.tile,
+    borderWidth: borderWidth.hairline,
+    borderColor: color.border,
+    paddingHorizontal: space.md,
+    paddingVertical: space.md,
+    letterSpacing: 1,
+  },
+  referralHint: {
+    ...type.meta,
+    color: color.danger,
   },
   footer: {
     flex: 1,
