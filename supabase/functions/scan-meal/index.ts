@@ -239,17 +239,14 @@ async function handlePhoto(
     return json({ error: 'vision_api_unreachable' }, 502);
   }
   if (!response.ok) {
-    // Diagnostic TEMPORAIRE : logge le vrai status + corps renvoyé par
-    // l'API vision (401 clé invalide, 404 modèle inconnu, 400 requête…)
-    // pour qu'il apparaisse dans les logs Supabase de la fonction.
+    // Diagnostic dans les logs Supabase UNIQUEMENT (status + corps) —
+    // jamais dans la réponse HTTP : on n'expose pas les messages
+    // internes de l'API vision aux clients.
     const detail = await response.text().catch(() => '(corps illisible)');
     console.error(
       `[scan-meal] vision API HTTP ${response.status} — ${detail.slice(0, 1000)}`,
     );
-    return json(
-      { error: 'vision_api_error', status: response.status, detail: detail.slice(0, 500) },
-      502,
-    );
+    return json({ error: 'vision_api_error' }, 502);
   }
 
   const payload = (await response.json()) as {
