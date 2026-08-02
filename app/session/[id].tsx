@@ -128,12 +128,15 @@ function SessionPlayer({
 /** Détail d'une séance : exercices + lecteur + complétion. */
 export default function SessionScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, start } = useLocalSearchParams<{ id: string; start?: string }>();
   const session = getSession(id);
   const completeSession = useOnboardingStore((state) => state.completeSession);
   const clearProgressEvents = useOnboardingStore((state) => state.clearProgressEvents);
   const events = useOnboardingStore((state) => state.lastProgressEvents);
-  const [mode, setMode] = useState<'detail' | 'player' | 'done'>('detail');
+  // « ?start=1 » (bouton Démarrer de l'accueil) ouvre directement le player.
+  const [mode, setMode] = useState<'detail' | 'player' | 'done'>(
+    start === '1' ? 'player' : 'detail',
+  );
 
   // Célébrations de la séance qui vient d'être complétée.
   const xpEvent = events.find((e) => e.kind === 'xp');
