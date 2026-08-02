@@ -17,8 +17,8 @@ export type PostureResult = {
   level: 'bonne' | 'moyenne' | 'à corriger';
 };
 
-/** Barème additif, en points de « perte » (max 11). */
-const MAX_POINTS = 11;
+/** Barème additif, en points de « perte » (max ~10, ratio borné à 1). */
+const MAX_POINTS = 10;
 const MIN_LOSS_CM = 0.3;
 const MAX_LOSS_CM = 4.0;
 
@@ -34,6 +34,14 @@ const POSTURE_POINTS: Record<NonNullable<QuizAnswers['postureType']>, number> = 
   'tres-voute': 3,
 };
 
+/** Téléphone/écran par jour — même signal que la tête en avant. */
+const PHONE_POINTS: Record<NonNullable<QuizAnswers['phoneHours']>, number> = {
+  'moins-2': 0,
+  '2-5': 1,
+  '5-plus': 2,
+};
+
+/** Ancien flow (profils existants) — mêmes poids que phone/tensions. */
 const FORWARD_HEAD_POINTS: Record<NonNullable<QuizAnswers['forwardHead']>, number> = {
   jamais: 0,
   parfois: 1,
@@ -54,20 +62,37 @@ const SHOULDERS_POINTS: Record<NonNullable<QuizAnswers['roundedShoulders']>, num
 
 const round1 = (value: number) => Math.round(value * 10) / 10;
 
-/** Somme des points de perte selon les réponses (réponse manquante = 0). */
+/**
+ * Somme des points de perte selon les réponses (réponse manquante = 0).
+ * Nouveau flow : assis + téléphone + tenue + tensions + perception.
+ * Ancien flow : les clés historiques (tête en avant, douleurs, épaules)
+ * servent de repli pour les profils déjà en base.
+ */
 function computeLossPoints(answers: QuizAnswers): number {
   let points = 0;
   if (answers.sittingHours) points += SITTING_POINTS[answers.sittingHours];
   if (answers.postureType) points += POSTURE_POINTS[answers.postureType];
-  if (answers.forwardHead) points += FORWARD_HEAD_POINTS[answers.forwardHead];
-  if (answers.pain) points += PAIN_POINTS[answers.pain];
-  if (answers.roundedShoulders) points += SHOULDERS_POINTS[answers.roundedShoulders];
+
+  if (answers.phoneHours) points += PHONE_POINTS[answers.phoneHours];
+  else if (answers.forwardHead) points += FORWARD_HEAD_POINTS[answers.forwardHead];
+
+  if (answers.tensions) {
+    // 0 zone → 0 pt, 1 zone → 1 pt, 2-3 zones → 2 pts.
+    points += Math.min(2, answers.tensions.length);
+  } else if (answers.pain) {
+    points += PAIN_POINTS[answers.pain];
+  }
+
+  // Perception « je me trouve plus petit » (0-3) — poids léger (max 1).
+  if (answers.feelSmaller !== undefined) points += answers.feelSmaller / 3;
+  else if (answers.roundedShoulders) points += SHOULDERS_POINTS[answers.roundedShoulders];
+
   return points;
 }
 
 export function computePostureResult(answers: QuizAnswers): PostureResult {
   const points = computeLossPoints(answers);
-  const ratio = points / MAX_POINTS;
+  const ratio = Math.min(1, points / MAX_POINTS);
 
   const heightLossCm = round1(MIN_LOSS_CM + ratio * (MAX_LOSS_CM - MIN_LOSS_CM));
   const postureScore = Math.round(100 - ratio * 100);

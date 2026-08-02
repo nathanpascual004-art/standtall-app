@@ -37,11 +37,36 @@ const FALLBACK_ANNUAL_PER_WEEK = '0,96 €';
 const FALLBACK_MONTHLY_PRICE = '9,99 €';
 const FALLBACK_WEEKLY_PRICE = '4,99 €';
 
-const BENEFITS = [
-  'Ta stature redressée exacte',
-  "Ton programme d'étirements sur-mesure",
-  'Suivi de ta progression',
-];
+/** Copies adaptées à l'intention choisie à l'onboarding. */
+const COPY = {
+  posture: {
+    title: 'Débloque ta stature redressée',
+    subtitle: "Ton programme posture personnalisé t'attend",
+    benefits: [
+      'Ta stature redressée exacte',
+      "Ton programme d'étirements sur-mesure",
+      'Suivi de ta progression',
+    ],
+  },
+  nutrition: {
+    title: 'Débloque ton plan nutrition',
+    subtitle: 'Ton objectif calorique et tes macros sur mesure',
+    benefits: [
+      'Ton objectif calorique personnalisé',
+      'Tes macros et le scan de repas',
+      'Suivi de ta progression',
+    ],
+  },
+  both: {
+    title: 'Débloque ton plan complet',
+    subtitle: 'Stature redressée + nutrition sur mesure',
+    benefits: [
+      'Ta stature redressée exacte',
+      "Ton programme d'étirements sur-mesure",
+      'Ton plan nutrition + scan de repas',
+    ],
+  },
+} as const;
 
 /** Dimensions de layout locales (pas des tokens de design). */
 const MASCOT_SIZE = 72;
@@ -104,6 +129,8 @@ function TrialChip() {
 export default function PaywallScreen() {
   const router = useRouter();
   const completeOnboarding = useOnboardingStore((state) => state.completeOnboarding);
+  const intention = useOnboardingStore((state) => state.answers.intention);
+  const copy = COPY[intention ?? 'posture'];
 
   const [offering, setOffering] = useState<PurchasesOffering | null>(null);
   const [selected, setSelected] = useState<Plan>('annual');
@@ -187,14 +214,14 @@ export default function PaywallScreen() {
       >
         <Animated.View entering={cascade(0)} style={styles.titleRow}>
           <View style={styles.titleBlock}>
-            <Text style={styles.title}>Débloque ta stature redressée</Text>
-            <Text style={styles.subtitle}>Ton programme posture personnalisé t'attend</Text>
+            <Text style={styles.title}>{copy.title}</Text>
+            <Text style={styles.subtitle}>{copy.subtitle}</Text>
           </View>
           <Mascot state="encourage" size={MASCOT_SIZE} />
         </Animated.View>
 
         <Animated.View entering={cascade(1)} style={styles.benefits}>
-          {BENEFITS.map((benefit) => (
+          {copy.benefits.map((benefit) => (
             <View key={benefit} style={styles.benefitRow}>
               <Ionicons name="checkmark-circle" size={20} color={color.accent} />
               <Text style={styles.benefitText}>{benefit}</Text>

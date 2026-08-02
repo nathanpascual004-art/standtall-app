@@ -1,19 +1,71 @@
-import { QuizSingleSelectScreen } from '@/components/QuizSingleSelectScreen';
+import { useRouter } from 'expo-router';
+import { StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-/** Étape 1/14 — objectif principal. */
-export default function GoalScreen() {
+import { Mascot } from '@/components/Mascot';
+import { PrimaryButton } from '@/components/PrimaryButton';
+import { color, duration, font, space, staggerDelay, type } from '@/theme/tokens';
+
+const MASCOT_SIZE = 132;
+
+const cascade = (index: number) =>
+  FadeInDown.delay(index * staggerDelay)
+    .duration(duration.base)
+    .reduceMotion(ReduceMotion.System);
+
+/** Écran 1 — splash / hook : logo, promesse honnête, COMMENCER. */
+export default function SplashScreen() {
+  const router = useRouter();
+
   return (
-    <QuizSingleSelectScreen
-      step={1}
-      title="Quel est ton objectif ?"
-      answerKey="goal"
-      options={[
-        { value: 'taller', label: 'Paraître plus grand' },
-        { value: 'posture', label: 'Corriger ma posture' },
-        { value: 'back-pain', label: 'Moins de douleurs de dos' },
-        { value: 'presence', label: 'Plus de présence' },
-      ]}
-      nextHref="/onboarding/step2"
-    />
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+      <View style={styles.body}>
+        <Animated.Text entering={cascade(0)} style={styles.logo}>
+          StandTall
+        </Animated.Text>
+        <Animated.View entering={cascade(1)}>
+          <Mascot state="neutral" size={MASCOT_SIZE} />
+        </Animated.View>
+        <Animated.Text entering={cascade(2)} style={styles.hook}>
+          Découvre ta vraie taille et reprends ta présence.
+        </Animated.Text>
+      </View>
+      <View style={styles.footer}>
+        <PrimaryButton label="Commencer" onPress={() => router.push('/onboarding/intention')} />
+      </View>
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: color.bg,
+    paddingHorizontal: space.screen,
+    paddingTop: space.md,
+  },
+  body: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: space.xxl,
+  },
+  logo: {
+    fontFamily: font.bold,
+    fontSize: 30,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    color: color.textPrimary,
+  },
+  hook: {
+    ...type.question,
+    textAlign: 'center',
+    // La promesse reste en phrase (pas en capitales) : ton direct, honnête.
+    textTransform: 'none',
+    letterSpacing: 0,
+  },
+  footer: {
+    paddingBottom: space.sm,
+  },
+});

@@ -12,26 +12,28 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { OnboardingProgress } from '@/components/OnboardingProgress';
 import { PrimaryButton } from '@/components/PrimaryButton';
-import { TOTAL_ONBOARDING_STEPS, useOnboardingStore } from '@/lib/store';
+import { questionCount, questionStep } from '@/lib/onboarding-flow';
+import { useOnboardingStore } from '@/lib/store';
 import { borderWidth, color, radius, space, type, webNoOutline } from '@/theme/tokens';
 
-const MIN_CM = 100;
-const MAX_CM = 230;
+const MIN_KG = 30;
+const MAX_KG = 250;
 
-/** Étape 4/14 — taille actuelle en cm (clavier numérique). */
-export default function HeightScreen() {
+/** Nutrition 4/5 — poids actuel (kg), pour Mifflin-St Jeor. */
+export default function NutriPoidsScreen() {
   const router = useRouter();
-  const storedHeight = useOnboardingStore((state) => state.answers.heightCm);
+  const intention = useOnboardingStore((state) => state.answers.intention);
+  const stored = useOnboardingStore((state) => state.answers.poidsKg);
   const setAnswer = useOnboardingStore((state) => state.setAnswer);
-  const [raw, setRaw] = useState(storedHeight ? String(storedHeight) : '');
+  const [raw, setRaw] = useState(stored ? String(stored) : '');
 
   const parsed = Number.parseInt(raw, 10);
-  const isValid = Number.isFinite(parsed) && parsed >= MIN_CM && parsed <= MAX_CM;
+  const isValid = Number.isFinite(parsed) && parsed >= MIN_KG && parsed <= MAX_KG;
 
   const handleContinue = () => {
     if (!isValid) return;
-    setAnswer('heightCm', parsed);
-    router.push('/onboarding/step5');
+    setAnswer('poidsKg', parsed);
+    router.push('/onboarding/nutri-difficulte');
   };
 
   return (
@@ -40,9 +42,12 @@ export default function HeightScreen() {
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <OnboardingProgress step={4} total={TOTAL_ONBOARDING_STEPS} />
+        <OnboardingProgress
+          step={questionStep(intention, 'poids')}
+          total={questionCount(intention)}
+        />
 
-        <Text style={styles.title}>Ta taille actuelle ?</Text>
+        <Text style={styles.title}>Ton poids actuel ?</Text>
 
         <View style={styles.inputRow}>
           <TextInput
@@ -50,16 +55,16 @@ export default function HeightScreen() {
             value={raw}
             onChangeText={(text) => setRaw(text.replace(/[^0-9]/g, '').slice(0, 3))}
             keyboardType="number-pad"
-            placeholder="175"
+            placeholder="70"
             placeholderTextColor={color.textMuted}
             maxLength={3}
             autoFocus
           />
-          <Text style={styles.unit}>cm</Text>
+          <Text style={styles.unit}>kg</Text>
         </View>
-        {raw.length >= 3 && !isValid ? (
+        {raw.length >= 2 && !isValid && raw.length >= 3 ? (
           <Text style={styles.hint}>
-            Entre une taille entre {MIN_CM} et {MAX_CM} cm.
+            Entre un poids entre {MIN_KG} et {MAX_KG} kg.
           </Text>
         ) : null}
 

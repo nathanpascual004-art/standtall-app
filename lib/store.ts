@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import type {
+  ActivityLevel,
   MealEntry,
   NutritionProfile,
   NutritionTargets,
@@ -19,11 +20,26 @@ import {
 /** Repas mémorisé pour les favoris — un MealEntry sans identifiant. */
 export type SavedMeal = Omit<MealEntry, 'id'>;
 
-/** Nombre total d'étapes du quiz d'onboarding. */
-export const TOTAL_ONBOARDING_STEPS = 14;
-
-/** Objectif principal choisi à l'étape 1. */
+/** Objectif principal choisi à l'étape 1 (ancien flow — conservé pour compat). */
 export type Goal = 'taller' | 'posture' | 'back-pain' | 'presence';
+
+/** Intention choisie à l'écran 2 du nouvel onboarding — branche la suite. */
+export type Intention = 'posture' | 'nutrition' | 'both';
+
+/** Temps d'écran téléphone par jour. */
+export type PhoneHours = 'moins-2' | '2-5' | '5-plus';
+
+/** Zones de tension déclarées (multi-choix ; [] = aucune). */
+export type TensionZone = 'nuque' | 'haut-dos' | 'bas-dos';
+
+/** Échelle 0-3 : pas du tout → beaucoup. */
+export type Scale4 = 0 | 1 | 2 | 3;
+
+/** Objectif nutrition du nouvel onboarding (plus large que NutritionGoal). */
+export type NutriIntent = 'masse' | 'maintien' | 'perte' | 'mieux-manger';
+
+/** Plus grosse difficulté nutrition déclarée. */
+export type NutriDifficulty = 'temps' | 'quoi-manger' | 'grignote' | 'calories';
 
 export type Gender = 'homme' | 'femme' | 'autre';
 
@@ -51,17 +67,35 @@ export type DailyMinutes = 5 | 10 | 15;
  * Réponses du quiz — une clé par écran.
  */
 export type QuizAnswers = {
-  goal?: Goal;
+  /** Intention (nouvel onboarding) — branche posture / nutrition / both. */
+  intention?: Intention;
   gender?: Gender;
   ageRange?: AgeRange;
-  /** Taille actuelle en cm (étape 4). */
+  /** Taille actuelle en cm — la référence du personnage. */
   heightCm?: number;
   sittingHours?: SittingHours;
+  /** Temps de téléphone par jour (remplace « tête en avant »). */
+  phoneHours?: PhoneHours;
   postureType?: PostureType;
+  /** Zones de tension (multi-choix ; [] = aucune). */
+  tensions?: TensionZone[];
+  /** « Tu te trouves plus petit que ta taille réelle ? » (0-3). */
+  feelSmaller?: Scale4;
+  /** Importance de se tenir droit / paraître plus grand (0-3). */
+  importance?: Scale4;
+  /** Bloc nutrition du nouvel onboarding. */
+  nutriGoal?: NutriIntent;
+  activite?: ActivityLevel;
+  mealsPerDay?: 2 | 3 | 4 | 5;
+  poidsKg?: number;
+  difficulty?: NutriDifficulty;
+  /** Email de capture du bilan (écran 8). */
+  email?: string;
+  // ── Champs de l'ancien flow — conservés pour les profils existants ──
+  goal?: Goal;
   forwardHead?: ForwardHead;
   pain?: PainFrequency;
   roundedShoulders?: ShoulderRoll;
-  /** URI locale de la photo de profil (étape 10) — analyse à venir. */
   profilePhotoUri?: string;
   dailyMinutes?: DailyMinutes;
 };

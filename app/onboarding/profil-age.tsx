@@ -1,10 +1,14 @@
 import { QuizSingleSelectScreen } from '@/components/QuizSingleSelectScreen';
+import { questionCount, questionStep } from '@/lib/onboarding-flow';
+import { useOnboardingStore } from '@/lib/store';
 
-/** Étape 3/14 — tranche d'âge. */
+/** Écran 4 — âge. */
 export default function AgeScreen() {
+  const intention = useOnboardingStore((state) => state.answers.intention);
   return (
     <QuizSingleSelectScreen
-      step={3}
+      step={questionStep(intention, 'age')}
+      total={questionCount(intention)}
       title="Ton âge ?"
       answerKey="ageRange"
       options={[
@@ -14,7 +18,7 @@ export default function AgeScreen() {
         { value: '35-44', label: '35 – 44 ans' },
         { value: '45+', label: '45 ans et plus' },
       ]}
-      nextHref="/onboarding/step4"
+      nextHref="/onboarding/profil-taille"
     />
   );
 }

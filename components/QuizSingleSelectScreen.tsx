@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { OnboardingProgress } from '@/components/OnboardingProgress';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { QuizOption } from '@/components/QuizOption';
-import { TOTAL_ONBOARDING_STEPS, useOnboardingStore, type QuizAnswers } from '@/lib/store';
+import { useOnboardingStore, type QuizAnswers } from '@/lib/store';
 import { color, duration, space, type } from '@/theme/tokens';
 
 type AnswerKey = keyof QuizAnswers;
@@ -21,7 +21,11 @@ type Option<K extends AnswerKey> = {
 
 type QuizSingleSelectScreenProps<K extends AnswerKey> = {
   step: number;
+  /** Total de questions de la branche (dépend de l'intention). */
+  total: number;
   title: string;
+  /** Sous-titre optionnel sous le titre. */
+  subtitle?: string;
   answerKey: K;
   options: Option<K>[];
   nextHref: Href;
@@ -34,7 +38,9 @@ type QuizSingleSelectScreenProps<K extends AnswerKey> = {
  */
 export function QuizSingleSelectScreen<K extends AnswerKey>({
   step,
+  total,
   title,
+  subtitle,
   answerKey,
   options,
   nextHref,
@@ -52,9 +58,10 @@ export function QuizSingleSelectScreen<K extends AnswerKey>({
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <OnboardingProgress step={step} total={TOTAL_ONBOARDING_STEPS} />
+      <OnboardingProgress step={step} total={total} />
 
       <Text style={styles.title}>{title}</Text>
+      {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
 
       {/* Une seule animation par écran : apparition douce du bloc d'options. */}
       <Animated.View
@@ -96,6 +103,10 @@ const styles = StyleSheet.create({
   title: {
     ...type.question,
     marginTop: space.xxl,
+  },
+  subtitle: {
+    ...type.body,
+    marginTop: space.sm,
   },
   options: {
     marginTop: space.xxl,
