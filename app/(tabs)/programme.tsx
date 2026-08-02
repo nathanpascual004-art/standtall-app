@@ -130,7 +130,12 @@ function TrophyNode({ unlocked, level }: { unlocked: boolean; level: number }) {
   );
 }
 
-/** Parcours nutrition léger : les 7 derniers jours de journal. */
+/**
+ * Parcours nutrition léger : les 7 derniers jours de journal.
+ * Dette technique (voir DETTE-TECHNIQUE.md) : l'onglet Nutrition complet
+ * (scan, journal, favoris) migrera ici dans une passe dédiée — la tab
+ * bar repassera alors à 4 onglets.
+ */
 function NutritionJourney() {
   const router = useRouter();
   const meals = useOnboardingStore((state) => state.meals);
