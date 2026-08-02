@@ -353,6 +353,7 @@ export default function NutritionScreen() {
             onChangeText={setUserHint}
             placeholder="ex. poulet riz ~300 g"
             placeholderTextColor={color.textMuted}
+            selectionColor={color.accent}
             accessibilityLabel="Aide l'IA"
           />
           <PrimaryButton
@@ -376,6 +377,7 @@ export default function NutritionScreen() {
                 keyboardType="number-pad"
                 placeholder="3017624010701"
                 placeholderTextColor={color.textMuted}
+                selectionColor={color.accent}
                 accessibilityLabel="Code-barres EAN"
               />
               <PrimaryButton
@@ -408,6 +410,7 @@ export default function NutritionScreen() {
                 onChangeText={(nom) => setDraft({ ...draft, nom })}
                 placeholder="Nom du repas"
                 placeholderTextColor={color.textMuted}
+                selectionColor={color.accent}
               />
               <View style={styles.itemList}>
                 {draft.items.map((item, index) => {

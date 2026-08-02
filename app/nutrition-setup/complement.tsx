@@ -76,6 +76,7 @@ export default function ComplementScreen() {
                 keyboardType="number-pad"
                 placeholder="Taille"
                 placeholderTextColor={color.textMuted}
+                selectionColor={color.accent}
               />
               <Text style={styles.unit}>cm</Text>
             </View>
@@ -90,6 +91,7 @@ export default function ComplementScreen() {
                 keyboardType="number-pad"
                 placeholder="Âge"
                 placeholderTextColor={color.textMuted}
+                selectionColor={color.accent}
               />
               <Text style={styles.unit}>ans</Text>
             </View>

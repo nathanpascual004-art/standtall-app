@@ -76,6 +76,7 @@ export default function EmailScreen() {
           onChangeText={setEmail}
           placeholder="ton@email.com"
           placeholderTextColor={color.textMuted}
+          selectionColor={color.accent}
           keyboardType="email-address"
           autoCapitalize="none"
           autoCorrect={false}
@@ -96,6 +97,7 @@ export default function EmailScreen() {
               }}
               placeholder="EX. JULES23"
               placeholderTextColor={color.textMuted}
+              selectionColor={color.accent}
               autoCapitalize="characters"
               autoCorrect={false}
               maxLength={24}

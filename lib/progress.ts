@@ -252,3 +252,21 @@ export function applySessionCompletion(
     events,
   };
 }
+
+/**
+ * Petit gain d'XP hors séance (habitude cochée). N'avance NI la série
+ * NI le total de séances — la série reste « au moins une séance par
+ * jour » ; les habitudes nourrissent le niveau.
+ */
+export function applyXpGain(
+  progress: ProgressState,
+  amount: number,
+): { progress: ProgressState; events: ProgressEvent[] } {
+  const xp = progress.xp + Math.max(0, amount);
+  const events: ProgressEvent[] = [{ kind: 'xp', amount, bonusApplied: false }];
+  const levelAfter = levelForXp(xp);
+  if (levelAfter > levelForXp(progress.xp)) {
+    events.push({ kind: 'level_up', level: levelAfter, rank: rankForLevel(levelAfter) });
+  }
+  return { progress: { ...progress, xp }, events };
+}

@@ -51,6 +51,7 @@ export default function WeightScreen() {
             keyboardType="number-pad"
             placeholder="72"
             placeholderTextColor={color.textMuted}
+            selectionColor={color.accent}
             maxLength={3}
             autoFocus
           />

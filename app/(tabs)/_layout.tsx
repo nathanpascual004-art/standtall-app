@@ -37,9 +37,9 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="programme"
         options={{
-          title: 'Programme',
+          title: 'Parcours',
           tabBarIcon: ({ color: tint, size }) => (
-            <Ionicons name="barbell-outline" color={tint} size={size} />
+            <Ionicons name="map-outline" color={tint} size={size} />
           ),
         }}
       />
@@ -49,6 +49,15 @@ export default function TabsLayout() {
           title: 'Nutrition',
           tabBarIcon: ({ color: tint, size }) => (
             <Ionicons name="nutrition-outline" color={tint} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="habitudes"
+        options={{
+          title: 'Habitudes',
+          tabBarIcon: ({ color: tint, size }) => (
+            <Ionicons name="checkbox-outline" color={tint} size={size} />
           ),
         }}
       />

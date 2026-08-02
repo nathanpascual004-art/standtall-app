@@ -8,9 +8,12 @@ import type {
   NutritionProfile,
   NutritionTargets,
 } from './nutrition';
+import { HABIT_XP } from './habits';
+import { advanceJourney, INITIAL_JOURNEY, JOURNEY_DAY_COUNT, type JourneyState } from './journey';
 import { getSession } from './program';
 import {
   applySessionCompletion,
+  applyXpGain,
   INITIAL_PROGRESS,
   SESSION_XP,
   type ProgressEvent,
@@ -129,6 +132,12 @@ type OnboardingState = {
   favoriteMeals: SavedMeal[];
   /** Progression gamifiée : streak, jokers, XP, badges (lib/progress). */
   progress: ProgressState;
+  /** Avancement du parcours (niveaux/jours) — lib/journey. */
+  journey: JourneyState;
+  /** Habitudes cochées par jour : { "2026-08-02": ["eau", …] }. */
+  habits: Record<string, string[]>;
+  /** Habitudes déjà créditées en XP (anti re-coche le même jour). */
+  habitsRewarded: Record<string, string[]>;
   /**
    * Événements de la DERNIÈRE séance complétée (XP, joker, niveau,
    * badges) — transitoire, consommé par l'écran de fin pour les
@@ -146,6 +155,8 @@ type OnboardingState = {
   removeMeal: (mealId: string) => void;
   /** Ajoute/retire un repas des favoris (identifié par son nom). */
   toggleFavoriteMeal: (meal: SavedMeal) => void;
+  /** Coche/décoche une habitude du jour (XP créditée à la 1re coche). */
+  toggleHabit: (habitId: string) => void;
   /** Vide les événements de célébration une fois affichés. */
   clearProgressEvents: () => void;
   reset: () => void;
@@ -168,9 +179,12 @@ type PersistedState = Pick<
   | 'meals'
   | 'favoriteMeals'
   | 'progress'
+  | 'journey'
+  | 'habits'
+  | 'habitsRewarded'
 >;
 
-const PERSIST_VERSION = 3;
+const PERSIST_VERSION = 4;
 
 /**
  * Storage no-op pour le pré-rendu statique web (Node, pas de window).
@@ -191,6 +205,9 @@ const initialState = {
   meals: {},
   favoriteMeals: [] as SavedMeal[],
   progress: INITIAL_PROGRESS,
+  journey: INITIAL_JOURNEY,
+  habits: {} as Record<string, string[]>,
+  habitsRewarded: {} as Record<string, string[]>,
   lastProgressEvents: [] as ProgressEvent[],
 } as const;
 
@@ -222,7 +239,33 @@ export const useOnboardingStore = create<OnboardingState>()(
               [day]: [...done, sessionId],
             },
             progress,
+            // Le parcours avance d'un nœud (au plus une fois par jour).
+            journey: advanceJourney(state.journey, day),
             lastProgressEvents: events,
+          };
+        }),
+      toggleHabit: (habitId) =>
+        set((state) => {
+          const day = todayKey();
+          const checked = state.habits[day] ?? [];
+          const isChecked = checked.includes(habitId);
+          const habits = {
+            ...state.habits,
+            [day]: isChecked
+              ? checked.filter((id) => id !== habitId)
+              : [...checked, habitId],
+          };
+          // XP créditée UNE fois par habitude et par jour (décocher ne
+          // retire rien, re-cocher ne recrédite pas — anti-farm).
+          const rewarded = state.habitsRewarded[day] ?? [];
+          if (isChecked || rewarded.includes(habitId)) {
+            return { habits };
+          }
+          const { progress } = applyXpGain(state.progress, HABIT_XP);
+          return {
+            habits,
+            habitsRewarded: { ...state.habitsRewarded, [day]: [...rewarded, habitId] },
+            progress,
           };
         }),
       clearProgressEvents: () => set({ lastProgressEvents: [] }),
@@ -267,6 +310,9 @@ export const useOnboardingStore = create<OnboardingState>()(
           meals: {},
           favoriteMeals: [],
           progress: INITIAL_PROGRESS,
+          journey: INITIAL_JOURNEY,
+          habits: {},
+          habitsRewarded: {},
           lastProgressEvents: [],
         }),
     }),
@@ -286,6 +332,9 @@ export const useOnboardingStore = create<OnboardingState>()(
         meals: state.meals,
         favoriteMeals: state.favoriteMeals,
         progress: state.progress,
+        journey: state.journey,
+        habits: state.habits,
+        habitsRewarded: state.habitsRewarded,
       }),
       // v1 → v2 : ajout des repas favoris (liste vide par défaut).
       // v2 → v3 : ajout de la progression — les séances déjà faites
@@ -307,6 +356,17 @@ export const useOnboardingStore = create<OnboardingState>()(
             xp: totalSessions * SESSION_XP,
           };
         }
+        // v3 → v4 : parcours + habitudes. Les séances déjà faites créditent
+        // l'avancement du parcours (une par jour, plafonné).
+        if (version < 4 || !state.journey) {
+          const daysActive = Object.keys(state.completedSessions ?? {}).length;
+          state.journey = {
+            day: Math.min(JOURNEY_DAY_COUNT, daysActive),
+            lastAdvanceDay: null,
+          };
+        }
+        if (!state.habits) state.habits = {};
+        if (!state.habitsRewarded) state.habitsRewarded = {};
         return state;
       },
       onRehydrateStorage: () => () => {

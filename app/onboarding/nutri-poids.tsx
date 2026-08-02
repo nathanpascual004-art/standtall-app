@@ -57,6 +57,7 @@ export default function NutriPoidsScreen() {
             keyboardType="number-pad"
             placeholder="70"
             placeholderTextColor={color.textMuted}
+            selectionColor={color.accent}
             maxLength={3}
             autoFocus
           />

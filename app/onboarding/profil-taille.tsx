@@ -61,6 +61,7 @@ export default function TailleScreen() {
             keyboardType="number-pad"
             placeholder="175"
             placeholderTextColor={color.textMuted}
+            selectionColor={color.accent}
             maxLength={3}
             autoFocus
           />
