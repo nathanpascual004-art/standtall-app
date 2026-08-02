@@ -14,8 +14,8 @@ import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BrandImage } from '@/components/BrandImage';
+import { CaloriesRing } from '@/components/CaloriesRing';
 import { Card } from '@/components/Card';
-import { MacroBars } from '@/components/MacroBars';
 import { Mascot } from '@/components/Mascot';
 import { PressableScale } from '@/components/PressableScale';
 import { PrimaryButton } from '@/components/PrimaryButton';
@@ -26,6 +26,8 @@ import {
   type MealScanResult,
   type ScanItem,
 } from '@/lib/foodScan';
+import { formatWater, waterRatio } from '@/lib/hydration';
+import { tipOfDay } from '@/lib/nutrition-tips';
 import { useOnboardingStore, todayKey, type SavedMeal } from '@/lib/store';
 import {
   borderWidth,
@@ -67,13 +69,30 @@ const MAX_RECENT_MEALS = 6;
  * Heure du repas, décodée de l'id (`AAAA-MM-JJ-<timestamp base36>`) —
  * affichage uniquement, aucune donnée supplémentaire persistée.
  */
-const mealTime = (id: string): string | null => {
+const mealDate = (id: string): Date | null => {
   const stamp = Number.parseInt(id.slice(id.lastIndexOf('-') + 1), 36);
   if (!Number.isFinite(stamp)) return null;
   const date = new Date(stamp);
-  if (date.getFullYear() < 2020) return null;
+  return date.getFullYear() < 2020 ? null : date;
+};
+
+const mealTime = (id: string): string | null => {
+  const date = mealDate(id);
+  if (!date) return null;
   return `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
 };
+
+/** Créneau du repas selon l'heure — pour grouper le journal du jour. */
+const mealSlot = (id: string): string => {
+  const date = mealDate(id);
+  if (!date) return 'Aujourd\'hui';
+  const hour = date.getHours();
+  if (hour < 11) return 'Petit-déj';
+  if (hour < 16) return 'Déjeuner';
+  return 'Dîner';
+};
+
+const MEAL_SLOTS = ['Petit-déj', 'Déjeuner', 'Dîner', 'Aujourd\'hui'];
 
 /** Apparition en cascade des blocs principaux (sobre, respecte reduce motion). */
 const cascade = (index: number) =>
@@ -134,6 +153,8 @@ export default function NutritionScreen() {
   const removeMeal = useOnboardingStore((state) => state.removeMeal);
   const favoriteMeals = useOnboardingStore((state) => state.favoriteMeals);
   const toggleFavoriteMeal = useOnboardingStore((state) => state.toggleFavoriteMeal);
+  const water = useOnboardingStore((state) => state.water);
+  const addWater = useOnboardingStore((state) => state.addWater);
 
   const [scanning, setScanning] = useState(false);
   const [draft, setDraft] = useState<DraftMeal | null>(null);
@@ -143,6 +164,8 @@ export default function NutritionScreen() {
   const [barcode, setBarcode] = useState('');
 
   const todayMeals = meals[todayKey()] ?? [];
+  const glasses = water[todayKey()] ?? 0;
+  const tip = tipOfDay(todayKey());
   const consumed = todayMeals.reduce(
     (total, meal) => ({
       calories: total.calories + meal.calories,
@@ -331,17 +354,48 @@ export default function NutritionScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>Nutrition</Text>
+        <SectionLabel style={styles.kicker}>Ton carburant</SectionLabel>
+        <Text style={styles.title}>Optimise ta récupération</Text>
         <Text style={styles.date}>{formatToday()}</Text>
 
+        {/* Hero : anneau calories restantes + macros — les vraies données. */}
         <Animated.View entering={cascade(0)}>
-          <Card style={styles.todayCard}>
-            <MacroBars
-              proteines={{ value: consumed.proteinesG, target: targets.proteinesG }}
-              glucides={{ value: consumed.glucidesG, target: targets.glucidesG }}
-              lipides={{ value: consumed.lipidesG, target: targets.lipidesG }}
-              kcal={{ value: consumed.calories, target: targets.calories }}
-            />
+          <Card style={styles.heroCard}>
+            <View style={styles.heroRow}>
+              <CaloriesRing consumed={consumed.calories} target={targets.calories} />
+              <View style={styles.macroColumn}>
+                {(
+                  [
+                    ['Protéines', consumed.proteinesG, targets.proteinesG, color.accent],
+                    ['Glucides', consumed.glucidesG, targets.glucidesG, color.macro2],
+                    ['Lipides', consumed.lipidesG, targets.lipidesG, color.macro3],
+                  ] as const
+                ).map(([label, value, target, barColor]) => (
+                  <View key={label} style={styles.macroBlock}>
+                    <View style={styles.macroHead}>
+                      <Text style={styles.macroLabel}>{label}</Text>
+                      <Text style={styles.macroValue}>
+                        {Math.round(value)}/{target} g
+                      </Text>
+                    </View>
+                    <View style={styles.macroRail}>
+                      <View
+                        style={[
+                          styles.macroFill,
+                          {
+                            backgroundColor: barColor,
+                            width: `${Math.round(Math.min(1, target > 0 ? value / target : 0) * 100)}%`,
+                          },
+                        ]}
+                      />
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </View>
+            <Text style={styles.heroHint}>
+              De quoi soutenir ta récupération et ton muscle aujourd'hui.
+            </Text>
           </Card>
         </Animated.View>
 
@@ -517,7 +571,13 @@ export default function NutritionScreen() {
             <Text style={styles.empty}>Aucun repas enregistré aujourd'hui.</Text>
           ) : (
             <View style={styles.mealList}>
-              {todayMeals.map((meal) => {
+              {MEAL_SLOTS.map((slot) => {
+                const slotMeals = todayMeals.filter((meal) => mealSlot(meal.id) === slot);
+                if (slotMeals.length === 0) return null;
+                return (
+                  <View key={slot} style={styles.slotBlock}>
+                    <Text style={styles.slotLabel}>{slot}</Text>
+                    {slotMeals.map((meal) => {
                 const time = mealTime(meal.id);
                 const isFavorite = favoriteNames.has(meal.nom);
                 return (
@@ -570,14 +630,69 @@ export default function NutritionScreen() {
                     </PressableScale>
                   </Card>
                 );
+                    })}
+                  </View>
+                );
               })}
             </View>
           )}
 
-          <Text style={styles.disclaimer}>
-            Estimations basées sur l'image. Ajuste si besoin.
-          </Text>
+          <PrimaryButton
+            label="Ajouter un repas"
+            variant="secondary"
+            disabled={scanning}
+            onPress={handleScan}
+            style={styles.addMealButton}
+          />
         </Animated.View>
+
+        {/* Hydratation — compacte, persistée par jour (reset auto). */}
+        <Animated.View entering={cascade(3)}>
+          <Card style={styles.waterCard}>
+            <Ionicons name="water-outline" size={20} color={color.accent} />
+            <View style={styles.waterBody}>
+              <View style={styles.waterHead}>
+                <Text style={styles.waterLabel}>Hydratation</Text>
+                <Text style={styles.waterValue}>{formatWater(glasses)}</Text>
+              </View>
+              <View style={styles.waterRail}>
+                <View
+                  style={[styles.waterFill, { width: `${Math.round(waterRatio(glasses) * 100)}%` }]}
+                />
+              </View>
+            </View>
+            <PressableScale
+              onPress={() => addWater(-1)}
+              accessibilityRole="button"
+              accessibilityLabel="Retirer un verre"
+              hitSlop={8}
+              style={styles.waterButton}
+            >
+              <Ionicons name="remove" size={18} color={color.textSecond} />
+            </PressableScale>
+            <PressableScale
+              onPress={() => addWater(1)}
+              accessibilityRole="button"
+              accessibilityLabel="Ajouter un verre"
+              hitSlop={8}
+              style={[styles.waterButton, styles.waterButtonPlus]}
+            >
+              <Ionicons name="add" size={18} color={color.onAccent} />
+            </PressableScale>
+          </Card>
+        </Animated.View>
+
+        {/* Conseil du jour — statique, honnête, tourne chaque jour. */}
+        <Animated.View entering={cascade(4)}>
+          <Card style={styles.tipCard}>
+            <SectionLabel>Conseil du jour</SectionLabel>
+            <Text style={styles.tipText}>{tip}</Text>
+          </Card>
+        </Animated.View>
+
+        <Text style={styles.disclaimer}>
+          Estimations basées sur l'image. Ajuste si besoin.
+        </Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -621,9 +736,50 @@ const styles = StyleSheet.create({
   introText: {
     ...type.body,
   },
-  todayCard: {
+  kicker: {
+    color: color.accent,
+  },
+  heroCard: {
     marginTop: space.lg,
     padding: space.lg,
+    gap: space.md,
+  },
+  heroRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.lg,
+  },
+  macroColumn: {
+    flex: 1,
+    gap: space.md,
+  },
+  macroBlock: {
+    gap: space.xs,
+  },
+  macroHead: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+  },
+  macroLabel: {
+    ...type.meta,
+  },
+  macroValue: {
+    ...type.meta,
+    fontVariant: ['tabular-nums'],
+  },
+  macroRail: {
+    height: 6,
+    borderRadius: radius.pill,
+    backgroundColor: color.railOff,
+    overflow: 'hidden',
+  },
+  macroFill: {
+    height: '100%',
+    borderRadius: radius.pill,
+  },
+  heroHint: {
+    ...type.body,
   },
   hintLabel: {
     marginTop: space.lg,
@@ -781,7 +937,71 @@ const styles = StyleSheet.create({
   },
   mealList: {
     marginTop: space.sm,
+    gap: space.md,
+  },
+  slotBlock: {
     gap: space.sm,
+  },
+  slotLabel: {
+    ...type.sectionLabel,
+    color: color.textMuted,
+  },
+  addMealButton: {
+    marginTop: space.md,
+  },
+  waterCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    marginTop: space.lg,
+    padding: space.lg,
+  },
+  waterBody: {
+    flex: 1,
+    gap: space.xs,
+  },
+  waterHead: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+  },
+  waterLabel: {
+    ...type.bodyMedium,
+  },
+  waterValue: {
+    ...type.meta,
+    fontVariant: ['tabular-nums'],
+  },
+  waterRail: {
+    height: 6,
+    borderRadius: radius.pill,
+    backgroundColor: color.railOff,
+    overflow: 'hidden',
+  },
+  waterFill: {
+    height: '100%',
+    borderRadius: radius.pill,
+    backgroundColor: color.accent,
+  },
+  waterButton: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.pill,
+    backgroundColor: color.surfaceAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  waterButtonPlus: {
+    backgroundColor: color.accent,
+  },
+  tipCard: {
+    marginTop: space.md,
+    padding: space.lg,
+    gap: space.sm,
+  },
+  tipText: {
+    ...type.body,
+    color: color.textPrimary,
   },
   mealCard: {
     flexDirection: 'row',

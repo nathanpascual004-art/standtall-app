@@ -37,7 +37,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="programme"
         options={{
-          title: 'Parcours',
+          title: 'Programme',
           tabBarIcon: ({ color: tint, size }) => (
             <Ionicons name="map-outline" color={tint} size={size} />
           ),
@@ -53,11 +53,11 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="habitudes"
+        name="progres"
         options={{
-          title: 'Habitudes',
+          title: 'Progrès',
           tabBarIcon: ({ color: tint, size }) => (
-            <Ionicons name="checkbox-outline" color={tint} size={size} />
+            <Ionicons name="trending-up-outline" color={tint} size={size} />
           ),
         }}
       />

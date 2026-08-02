@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,7 +9,7 @@ import { Mascot } from '@/components/Mascot';
 import { PressableScale } from '@/components/PressableScale';
 import { SectionLabel } from '@/components/SectionLabel';
 import { HABIT_XP, HABITS } from '@/lib/habits';
-import { displayStreak } from '@/lib/progress';
+import { displayStreak, levelProgress } from '@/lib/progress';
 import { todayKey, useOnboardingStore } from '@/lib/store';
 import { borderWidth, color, duration, radius, space, staggerDelay, type } from '@/theme/tokens';
 
@@ -21,14 +22,16 @@ const cascade = (index: number) =>
     .duration(duration.base)
     .reduceMotion(ReduceMotion.System);
 
-/** Onglet Habitudes — streak + checklist quotidienne honnête. */
-export default function HabitudesScreen() {
+/** Onglet Progrès — streak, checklist d'habitudes, niveau et récompenses. */
+export default function ProgresScreen() {
+  const router = useRouter();
   const progress = useOnboardingStore((state) => state.progress);
   const habits = useOnboardingStore((state) => state.habits);
   const toggleHabit = useOnboardingStore((state) => state.toggleHabit);
 
   const today = todayKey();
   const streak = displayStreak(progress, today);
+  const level = levelProgress(progress.xp);
   const checked = habits[today] ?? [];
 
   return (
@@ -38,7 +41,7 @@ export default function HabitudesScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>Habitudes</Text>
+        <Text style={styles.title}>Progrès</Text>
 
         {/* Streak en tête : la mécanique centrale reste la série de séances. */}
         <Animated.View entering={cascade(0)}>
@@ -62,8 +65,26 @@ export default function HabitudesScreen() {
           </Card>
         </Animated.View>
 
+        {/* Niveau + accès aux récompenses (badges, record, jokers). */}
         <Animated.View entering={cascade(1)}>
-          <SectionLabel style={styles.listLabel}>Aujourd'hui</SectionLabel>
+          <PressableScale
+            onPress={() => router.push('/recompenses')}
+            accessibilityRole="button"
+            accessibilityLabel="Récompenses"
+          >
+            <Card style={styles.levelCard}>
+              <View style={styles.levelText}>
+                <Text style={styles.levelValue}>Niv. {level.level}</Text>
+                <Text style={styles.levelRank}>{level.rank}</Text>
+              </View>
+              <Text style={styles.levelLink}>Récompenses</Text>
+              <Ionicons name="chevron-forward" size={16} color={color.textMuted} />
+            </Card>
+          </PressableScale>
+        </Animated.View>
+
+        <Animated.View entering={cascade(2)}>
+          <SectionLabel style={styles.listLabel}>Habitudes du jour</SectionLabel>
           <View style={styles.list}>
             {HABITS.map((habit) => {
               const isChecked = checked.includes(habit.id);
@@ -153,6 +174,28 @@ const styles = StyleSheet.create({
   streakHint: {
     ...type.body,
     flex: 1,
+  },
+  levelCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    marginTop: space.md,
+    padding: space.lg,
+  },
+  levelText: {
+    flex: 1,
+    gap: space.xs / 2,
+  },
+  levelValue: {
+    ...type.cardTitle,
+  },
+  levelRank: {
+    ...type.meta,
+    color: color.accent,
+  },
+  levelLink: {
+    ...type.meta,
+    color: color.textSecond,
   },
   listLabel: {
     marginTop: space.xl,

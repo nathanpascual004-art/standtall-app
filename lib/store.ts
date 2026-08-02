@@ -9,6 +9,7 @@ import type {
   NutritionTargets,
 } from './nutrition';
 import { HABIT_XP } from './habits';
+import { MAX_GLASSES_PER_DAY } from './hydration';
 import { advanceJourney, INITIAL_JOURNEY, JOURNEY_DAY_COUNT, type JourneyState } from './journey';
 import { getSession } from './program';
 import {
@@ -138,6 +139,8 @@ type OnboardingState = {
   habits: Record<string, string[]>;
   /** Habitudes déjà créditées en XP (anti re-coche le même jour). */
   habitsRewarded: Record<string, string[]>;
+  /** Verres d'eau bus par jour : { "2026-08-02": 5 } (reset auto par clé). */
+  water: Record<string, number>;
   /**
    * Événements de la DERNIÈRE séance complétée (XP, joker, niveau,
    * badges) — transitoire, consommé par l'écran de fin pour les
@@ -157,6 +160,8 @@ type OnboardingState = {
   toggleFavoriteMeal: (meal: SavedMeal) => void;
   /** Coche/décoche une habitude du jour (XP créditée à la 1re coche). */
   toggleHabit: (habitId: string) => void;
+  /** Ajoute (+1) ou retire (-1) un verre d'eau au compteur du jour. */
+  addWater: (delta: 1 | -1) => void;
   /** Vide les événements de célébration une fois affichés. */
   clearProgressEvents: () => void;
   reset: () => void;
@@ -182,9 +187,10 @@ type PersistedState = Pick<
   | 'journey'
   | 'habits'
   | 'habitsRewarded'
+  | 'water'
 >;
 
-const PERSIST_VERSION = 4;
+const PERSIST_VERSION = 5;
 
 /**
  * Storage no-op pour le pré-rendu statique web (Node, pas de window).
@@ -208,6 +214,7 @@ const initialState = {
   journey: INITIAL_JOURNEY,
   habits: {} as Record<string, string[]>,
   habitsRewarded: {} as Record<string, string[]>,
+  water: {} as Record<string, number>,
   lastProgressEvents: [] as ProgressEvent[],
 } as const;
 
@@ -268,6 +275,14 @@ export const useOnboardingStore = create<OnboardingState>()(
             progress,
           };
         }),
+      addWater: (delta) =>
+        set((state) => {
+          const day = todayKey();
+          const current = state.water[day] ?? 0;
+          const next = Math.max(0, Math.min(MAX_GLASSES_PER_DAY, current + delta));
+          if (next === current) return state;
+          return { water: { ...state.water, [day]: next } };
+        }),
       clearProgressEvents: () => set({ lastProgressEvents: [] }),
       setNutritionDraft: (patch) =>
         set((state) => ({ nutritionDraft: { ...state.nutritionDraft, ...patch } })),
@@ -313,6 +328,7 @@ export const useOnboardingStore = create<OnboardingState>()(
           journey: INITIAL_JOURNEY,
           habits: {},
           habitsRewarded: {},
+          water: {},
           lastProgressEvents: [],
         }),
     }),
@@ -335,6 +351,7 @@ export const useOnboardingStore = create<OnboardingState>()(
         journey: state.journey,
         habits: state.habits,
         habitsRewarded: state.habitsRewarded,
+        water: state.water,
       }),
       // v1 → v2 : ajout des repas favoris (liste vide par défaut).
       // v2 → v3 : ajout de la progression — les séances déjà faites
@@ -367,6 +384,8 @@ export const useOnboardingStore = create<OnboardingState>()(
         }
         if (!state.habits) state.habits = {};
         if (!state.habitsRewarded) state.habitsRewarded = {};
+        // v4 → v5 : compteur d'hydratation.
+        if (!state.water) state.water = {};
         return state;
       },
       onRehydrateStorage: () => () => {

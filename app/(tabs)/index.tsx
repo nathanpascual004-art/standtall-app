@@ -5,7 +5,6 @@ import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Card } from '@/components/Card';
-import { MacroBars } from '@/components/MacroBars';
 import { Mascot } from '@/components/Mascot';
 import { PressableScale } from '@/components/PressableScale';
 import { PrimaryButton } from '@/components/PrimaryButton';
@@ -14,6 +13,7 @@ import { SectionLabel } from '@/components/SectionLabel';
 import { SegmentRail } from '@/components/SegmentRail';
 import { StatCard } from '@/components/StatCard';
 import { Toise } from '@/components/Toise';
+import { waterRatio } from '@/lib/hydration';
 import { computePostureResult } from '@/lib/posture';
 import { SESSIONS } from '@/lib/program';
 import { displayStreak, levelProgress } from '@/lib/progress';
@@ -51,7 +51,7 @@ export default function StatureScreen() {
   const answers = useOnboardingStore((state) => state.answers);
   const completedSessions = useOnboardingStore((state) => state.completedSessions);
   const nutritionTargets = useOnboardingStore((state) => state.nutritionTargets);
-  const meals = useOnboardingStore((state) => state.meals);
+  const water = useOnboardingStore((state) => state.water);
   const progress = useOnboardingStore((state) => state.progress);
   const result = computePostureResult(answers);
 
@@ -84,17 +84,8 @@ export default function StatureScreen() {
   const toiseSubtext =
     pct !== undefined ? `Tu te tiens à ${pct} % de ta pleine hauteur.` : undefined;
 
-  // Consommé du jour (même calcul que l'onglet Nutrition).
-  const todayMeals = meals[todayKey()] ?? [];
-  const consumed = todayMeals.reduce(
-    (total, meal) => ({
-      calories: total.calories + meal.calories,
-      proteinesG: total.proteinesG + meal.proteinesG,
-      glucidesG: total.glucidesG + meal.glucidesG,
-      lipidesG: total.lipidesG + meal.lipidesG,
-    }),
-    { calories: 0, proteinesG: 0, glucidesG: 0, lipidesG: 0 },
-  );
+  // Hydratation du jour — pour la carte compacte « Nutrition du jour ».
+  const hydrationPct = Math.round(waterRatio(water[todayKey()] ?? 0) * 100);
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -234,35 +225,33 @@ export default function StatureScreen() {
           </Card>
         </Animated.View>
 
+        {/* Carte compacte — la nutrition fait partie de l'expérience sans
+            surcharger l'accueil (le détail vit dans l'onglet Nutrition). */}
         <Animated.View entering={cascade(7)}>
-          {nutritionTargets ? (
-            <Card style={styles.nutritionCard}>
-              <SectionLabel>Nutrition</SectionLabel>
-              <MacroBars
-                proteines={{ value: consumed.proteinesG, target: nutritionTargets.proteinesG }}
-                glucides={{ value: consumed.glucidesG, target: nutritionTargets.glucidesG }}
-                lipides={{ value: consumed.lipidesG, target: nutritionTargets.lipidesG }}
-                kcal={{ value: consumed.calories, target: nutritionTargets.calories }}
-              />
-              <PrimaryButton
-                label="Scanner un repas"
-                onPress={() => router.push('/(tabs)/nutrition')}
-              />
-            </Card>
-          ) : (
-            <Card style={styles.nutritionCard}>
-              <SectionLabel>Nutrition</SectionLabel>
-              <Text style={styles.nutritionTeaser}>
-                Calcule tes besoins en calories et en macros, adaptés à ton
-                objectif.
+          <PressableScale
+            onPress={() =>
+              nutritionTargets
+                ? router.push('/(tabs)/nutrition')
+                : router.push('/nutrition-setup')
+            }
+            accessibilityRole="button"
+            accessibilityLabel="Nutrition du jour"
+          >
+            <Card style={styles.nutritionCompact}>
+              <Ionicons name="nutrition-outline" size={18} color={color.accent} />
+              <View style={styles.nutritionCompactText}>
+                <Text style={styles.nutritionCompactTitle}>Nutrition du jour</Text>
+                <Text style={styles.nutritionCompactMeta}>
+                  {nutritionTargets
+                    ? `Hydratation ${hydrationPct} % · 1 conseil dispo`
+                    : 'Configure ton suivi carburant'}
+                </Text>
+              </View>
+              <Text style={styles.nutritionCompactLink}>
+                {nutritionTargets ? 'Voir mon suivi →' : 'Configurer →'}
               </Text>
-              <PrimaryButton
-                label="Configurer"
-                variant="secondary"
-                onPress={() => router.push('/nutrition-setup')}
-              />
             </Card>
-          )}
+          </PressableScale>
         </Animated.View>
       </ScrollView>
     </SafeAreaView>
@@ -439,12 +428,25 @@ const styles = StyleSheet.create({
     color: color.textMuted,
     textAlign: 'center',
   },
-  nutritionCard: {
+  nutritionCompact: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
     marginTop: space.md,
     padding: space.lg,
-    gap: space.lg,
   },
-  nutritionTeaser: {
-    ...type.body,
+  nutritionCompactText: {
+    flex: 1,
+    gap: space.xs / 2,
+  },
+  nutritionCompactTitle: {
+    ...type.bodyMedium,
+  },
+  nutritionCompactMeta: {
+    ...type.meta,
+  },
+  nutritionCompactLink: {
+    ...type.meta,
+    color: color.accent,
   },
 });
