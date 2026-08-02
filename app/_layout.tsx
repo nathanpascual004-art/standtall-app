@@ -11,7 +11,8 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { initPurchases } from '@/lib/purchases';
-import { useOnboardingStore } from '@/lib/store';
+import { initNotifications, scheduleStreakReminder } from '@/lib/reminders';
+import { todayKey, useOnboardingStore } from '@/lib/store';
 import { color } from '@/theme/tokens';
 
 /**
@@ -30,7 +31,15 @@ export default function RootLayout() {
 
   useEffect(() => {
     initPurchases();
+    initNotifications();
   }, []);
+
+  // À chaque ouverture, replanifie le rappel anti-rupture de série avec
+  // l'état à jour (no-op sans permission, sans série, ou sur le web).
+  useEffect(() => {
+    if (!hasHydrated) return;
+    void scheduleStreakReminder(useOnboardingStore.getState().progress, todayKey());
+  }, [hasHydrated]);
 
   // Tant que le store n'est pas rechargé depuis le disque et que les polices
   // ne sont pas prêtes, écran neutre : évite le flash qui renverrait un
@@ -64,6 +73,7 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="session/[id]" />
           <Stack.Screen name="nutrition-setup" />
+          <Stack.Screen name="recompenses" />
         </Stack.Protected>
         <Stack.Screen name="paywall" />
       </Stack>

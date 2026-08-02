@@ -16,6 +16,7 @@ import { StatCard } from '@/components/StatCard';
 import { Toise } from '@/components/Toise';
 import { computePostureResult } from '@/lib/posture';
 import { SESSIONS } from '@/lib/program';
+import { displayStreak, levelProgress } from '@/lib/progress';
 import { todayKey, useOnboardingStore } from '@/lib/store';
 import { borderWidth, color, duration, radius, space, staggerDelay, type } from '@/theme/tokens';
 
@@ -36,6 +37,7 @@ const formatToday = () => {
 const TOISE_HEIGHT = 168;
 const MASCOT_SIZE = 92;
 const CHART_HEIGHT = 120;
+const LEVEL_BAR_HEIGHT = 56;
 
 /** Apparition en cascade des cartes principales (sobre, respecte reduce motion). */
 const cascade = (index: number) =>
@@ -50,7 +52,12 @@ export default function StatureScreen() {
   const completedSessions = useOnboardingStore((state) => state.completedSessions);
   const nutritionTargets = useOnboardingStore((state) => state.nutritionTargets);
   const meals = useOnboardingStore((state) => state.meals);
+  const progress = useOnboardingStore((state) => state.progress);
   const result = computePostureResult(answers);
+
+  // Gamification : streak affiché (jokers compris) + niveau/rang.
+  const streak = displayStreak(progress, todayKey());
+  const level = levelProgress(progress.xp);
 
   const doneToday = completedSessions[todayKey()] ?? [];
   const nextSession =
@@ -112,6 +119,38 @@ export default function StatureScreen() {
         </View>
 
         <Animated.View entering={cascade(0)}>
+          <PressableScale
+            onPress={() => router.push('/recompenses')}
+            accessibilityRole="button"
+            accessibilityLabel="Récompenses"
+          >
+            <Card style={styles.streakCard}>
+              <View style={styles.streakBlock}>
+                <View style={styles.streakRow}>
+                  <Ionicons name="flame" size={26} color={streak > 0 ? color.accent : color.textMuted} />
+                  <Text style={styles.streakValue}>{streak}</Text>
+                </View>
+                <Text style={styles.gamifLabel}>Streak</Text>
+              </View>
+              <View style={styles.levelBlock}>
+                <Text style={styles.levelValue}>Niv. {level.level}</Text>
+                <Text style={styles.rankLabel}>{level.rank}</Text>
+                <Text style={styles.gamifLabel}>Niveau</Text>
+              </View>
+              {/* Barre verticale — raccord avec la signature « toise ». */}
+              <View style={styles.levelBarBlock}>
+                <View style={styles.levelBarRail}>
+                  <View style={[styles.levelBarFill, { height: `${Math.round(level.ratio * 100)}%` }]} />
+                </View>
+                <Text style={styles.levelBarMeta}>
+                  {level.current}/{level.needed} XP
+                </Text>
+              </View>
+            </Card>
+          </PressableScale>
+        </Animated.View>
+
+        <Animated.View entering={cascade(1)}>
           <Card style={styles.heroCard}>
             <View style={styles.heroToise}>
               <Toise
@@ -131,7 +170,7 @@ export default function StatureScreen() {
           </Text>
         </Animated.View>
 
-        <Animated.View entering={cascade(1)} style={styles.statRow}>
+        <Animated.View entering={cascade(2)} style={styles.statRow}>
           <StatCard
             label="Stature avachi"
             value={`${answers.heightCm ?? '—'} cm`}
@@ -144,7 +183,7 @@ export default function StatureScreen() {
           />
         </Animated.View>
 
-        <Animated.View entering={cascade(2)}>
+        <Animated.View entering={cascade(3)}>
           <Card style={styles.infoCard}>
             <View style={styles.infoIcon}>
               <Ionicons name="arrow-up-outline" size={16} color={color.accent} />
@@ -157,7 +196,7 @@ export default function StatureScreen() {
           </Card>
         </Animated.View>
 
-        <Animated.View entering={cascade(3)}>
+        <Animated.View entering={cascade(4)}>
           <Card style={styles.programCard}>
             <SectionLabel>Programme du jour</SectionLabel>
             <SegmentRail total={SESSIONS.length} done={doneToday.length} />
@@ -167,7 +206,7 @@ export default function StatureScreen() {
           </Card>
         </Animated.View>
 
-        <Animated.View entering={cascade(4)}>
+        <Animated.View entering={cascade(5)}>
           <Card style={styles.sessionCard}>
             <SectionLabel>Prochaine séance</SectionLabel>
             <Text style={styles.sessionTitle}>
@@ -180,7 +219,7 @@ export default function StatureScreen() {
           </Card>
         </Animated.View>
 
-        <Animated.View entering={cascade(5)}>
+        <Animated.View entering={cascade(6)}>
           <Card style={styles.chartCard}>
             <SectionLabel>Progression posture</SectionLabel>
             {totalDone >= 2 ? (
@@ -195,7 +234,7 @@ export default function StatureScreen() {
           </Card>
         </Animated.View>
 
-        <Animated.View entering={cascade(6)}>
+        <Animated.View entering={cascade(7)}>
           {nutritionTargets ? (
             <Card style={styles.nutritionCard}>
               <SectionLabel>Nutrition</SectionLabel>
@@ -255,6 +294,61 @@ const styles = StyleSheet.create({
   headerDate: {
     ...type.meta,
     marginTop: space.xs / 2,
+  },
+  streakCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.lg,
+    marginTop: space.lg,
+    padding: space.lg,
+  },
+  streakBlock: {
+    alignItems: 'flex-start',
+    gap: space.xs,
+  },
+  streakRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.xs,
+  },
+  streakValue: {
+    ...type.statNumberSmall,
+    fontVariant: ['tabular-nums'],
+  },
+  gamifLabel: {
+    ...type.sectionLabel,
+  },
+  levelBlock: {
+    flex: 1,
+    gap: space.xs / 2,
+  },
+  levelValue: {
+    ...type.cardTitle,
+  },
+  rankLabel: {
+    ...type.meta,
+    color: color.accent,
+  },
+  levelBarBlock: {
+    alignItems: 'center',
+    gap: space.xs,
+  },
+  levelBarRail: {
+    width: 8,
+    height: LEVEL_BAR_HEIGHT,
+    borderRadius: radius.pill,
+    backgroundColor: color.railOff,
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+  },
+  levelBarFill: {
+    width: '100%',
+    borderRadius: radius.pill,
+    backgroundColor: color.accent,
+  },
+  levelBarMeta: {
+    ...type.meta,
+    fontVariant: ['tabular-nums'],
   },
   heroCard: {
     flexDirection: 'row',

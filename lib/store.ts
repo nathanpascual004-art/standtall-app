@@ -7,6 +7,14 @@ import type {
   NutritionProfile,
   NutritionTargets,
 } from './nutrition';
+import { getSession } from './program';
+import {
+  applySessionCompletion,
+  INITIAL_PROGRESS,
+  SESSION_XP,
+  type ProgressEvent,
+  type ProgressState,
+} from './progress';
 
 /** Repas mémorisé pour les favoris — un MealEntry sans identifiant. */
 export type SavedMeal = Omit<MealEntry, 'id'>;
@@ -85,6 +93,14 @@ type OnboardingState = {
   meals: Record<string, MealEntry[]>;
   /** Repas favoris (réutilisation en 1 tap depuis l'écran Nutrition). */
   favoriteMeals: SavedMeal[];
+  /** Progression gamifiée : streak, jokers, XP, badges (lib/progress). */
+  progress: ProgressState;
+  /**
+   * Événements de la DERNIÈRE séance complétée (XP, joker, niveau,
+   * badges) — transitoire, consommé par l'écran de fin pour les
+   * célébrations, jamais persisté.
+   */
+  lastProgressEvents: ProgressEvent[];
   setHasHydrated: (value: boolean) => void;
   setAnswer: <K extends keyof QuizAnswers>(key: K, value: QuizAnswers[K]) => void;
   setReferralCode: (code: string | undefined) => void;
@@ -96,6 +112,8 @@ type OnboardingState = {
   removeMeal: (mealId: string) => void;
   /** Ajoute/retire un repas des favoris (identifié par son nom). */
   toggleFavoriteMeal: (meal: SavedMeal) => void;
+  /** Vide les événements de célébration une fois affichés. */
+  clearProgressEvents: () => void;
   reset: () => void;
 };
 
@@ -115,9 +133,10 @@ type PersistedState = Pick<
   | 'nutritionTargets'
   | 'meals'
   | 'favoriteMeals'
+  | 'progress'
 >;
 
-const PERSIST_VERSION = 2;
+const PERSIST_VERSION = 3;
 
 /**
  * Storage no-op pour le pré-rendu statique web (Node, pas de window).
@@ -137,6 +156,8 @@ const initialState = {
   nutritionDraft: {},
   meals: {},
   favoriteMeals: [] as SavedMeal[],
+  progress: INITIAL_PROGRESS,
+  lastProgressEvents: [] as ProgressEvent[],
 } as const;
 
 export const useOnboardingStore = create<OnboardingState>()(
@@ -152,14 +173,25 @@ export const useOnboardingStore = create<OnboardingState>()(
         set((state) => {
           const day = todayKey();
           const done = state.completedSessions[day] ?? [];
+          // Refaire une séance déjà complétée aujourd'hui ne redonne
+          // ni XP ni streak (anti-farm) — comme avant pour le suivi.
           if (done.includes(sessionId)) return state;
+          const exerciseCount = getSession(sessionId)?.exercises.length ?? 0;
+          const { progress, events } = applySessionCompletion(
+            state.progress,
+            day,
+            exerciseCount,
+          );
           return {
             completedSessions: {
               ...state.completedSessions,
               [day]: [...done, sessionId],
             },
+            progress,
+            lastProgressEvents: events,
           };
         }),
+      clearProgressEvents: () => set({ lastProgressEvents: [] }),
       setNutritionDraft: (patch) =>
         set((state) => ({ nutritionDraft: { ...state.nutritionDraft, ...patch } })),
       setNutritionProfile: (profile, targets) =>
@@ -200,6 +232,8 @@ export const useOnboardingStore = create<OnboardingState>()(
           nutritionTargets: undefined,
           meals: {},
           favoriteMeals: [],
+          progress: INITIAL_PROGRESS,
+          lastProgressEvents: [],
         }),
     }),
     {
@@ -217,12 +251,27 @@ export const useOnboardingStore = create<OnboardingState>()(
         nutritionTargets: state.nutritionTargets,
         meals: state.meals,
         favoriteMeals: state.favoriteMeals,
+        progress: state.progress,
       }),
       // v1 → v2 : ajout des repas favoris (liste vide par défaut).
+      // v2 → v3 : ajout de la progression — les séances déjà faites
+      // créditent le total et l'XP ; le streak repart proprement (on ne
+      // peut pas reconstituer les jours consécutifs de façon fiable).
       migrate: (persistedState, version) => {
         const state = persistedState as PersistedState;
         if (version < 2 && !Array.isArray(state.favoriteMeals)) {
           state.favoriteMeals = [];
+        }
+        if (version < 3 || !state.progress) {
+          const totalSessions = Object.values(state.completedSessions ?? {}).reduce(
+            (sum, list) => sum + list.length,
+            0,
+          );
+          state.progress = {
+            ...INITIAL_PROGRESS,
+            totalSessions,
+            xp: totalSessions * SESSION_XP,
+          };
         }
         return state;
       },

@@ -12,6 +12,7 @@ import { PrimaryButton } from '@/components/PrimaryButton';
 import { SectionLabel } from '@/components/SectionLabel';
 import { PRIVACY_URL, SUPPORT_EMAIL, TERMS_URL } from '@/lib/config';
 import type { ActivityLevel, NutritionGoal } from '@/lib/nutrition';
+import { levelProgress } from '@/lib/progress';
 import { restorePurchases, useEntitlement } from '@/lib/purchases';
 import { useOnboardingStore } from '@/lib/store';
 import {
@@ -90,6 +91,8 @@ export default function ProfilScreen() {
   const profile = useOnboardingStore((state) => state.nutritionProfile);
   const setNutritionDraft = useOnboardingStore((state) => state.setNutritionDraft);
   const reset = useOnboardingStore((state) => state.reset);
+  const progress = useOnboardingStore((state) => state.progress);
+  const level = levelProgress(progress.xp);
   const { isPro } = useEntitlement();
 
   const [restoreFeedback, setRestoreFeedback] = useState<string | null>(null);
@@ -167,6 +170,20 @@ export default function ProfilScreen() {
         </Animated.View>
 
         <Animated.View entering={cascade(1)}>
+          <SectionLabel style={styles.sectionLabel}>Progression</SectionLabel>
+          <Card style={styles.sectionCard}>
+            <Row first label="Niveau" value={`${level.level} — ${level.rank}`} />
+            <Row label="Record de série" value={`${progress.bestStreak} j`} />
+            <Row
+              label="Récompenses"
+              onPress={() => router.push('/recompenses')}
+              icon={chevron}
+              labelColor={color.accent}
+            />
+          </Card>
+        </Animated.View>
+
+        <Animated.View entering={cascade(2)}>
           <SectionLabel style={styles.sectionLabel}>Abonnement</SectionLabel>
           <Card style={styles.sectionCard}>
             <Row
@@ -190,7 +207,7 @@ export default function ProfilScreen() {
           </Card>
         </Animated.View>
 
-        <Animated.View entering={cascade(2)}>
+        <Animated.View entering={cascade(3)}>
           <SectionLabel style={styles.sectionLabel}>Légal</SectionLabel>
           <Card style={styles.sectionCard}>
             <Row
@@ -212,7 +229,7 @@ export default function ProfilScreen() {
           </Card>
         </Animated.View>
 
-        <Animated.View entering={cascade(3)}>
+        <Animated.View entering={cascade(4)}>
           <SectionLabel style={styles.sectionLabel}>Données</SectionLabel>
           <Card style={styles.sectionCard}>
             {confirmReset ? (

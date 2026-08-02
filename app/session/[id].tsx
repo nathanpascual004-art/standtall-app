@@ -18,7 +18,8 @@ import {
   getSession,
   type Session,
 } from '@/lib/program';
-import { useOnboardingStore } from '@/lib/store';
+import { ensureReminderPermission, scheduleStreakReminder } from '@/lib/reminders';
+import { todayKey, useOnboardingStore } from '@/lib/store';
 import {
   borderWidth,
   color,
@@ -130,7 +131,26 @@ export default function SessionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const session = getSession(id);
   const completeSession = useOnboardingStore((state) => state.completeSession);
+  const clearProgressEvents = useOnboardingStore((state) => state.clearProgressEvents);
+  const events = useOnboardingStore((state) => state.lastProgressEvents);
   const [mode, setMode] = useState<'detail' | 'player' | 'done'>('detail');
+
+  // Célébrations de la séance qui vient d'être complétée.
+  const xpEvent = events.find((e) => e.kind === 'xp');
+  const streakEvent = events.find((e) => e.kind === 'streak');
+  const freezeUsed = events.find((e) => e.kind === 'freeze_used');
+  const levelUp = events.find((e) => e.kind === 'level_up');
+  const newBadges = events.filter((e) => e.kind === 'badge_unlocked');
+
+  // Après complétion : permission de notifier (1er bon moment) puis
+  // replanification du rappel anti-rupture pour demain 19 h.
+  useEffect(() => {
+    if (mode !== 'done') return;
+    void (async () => {
+      await ensureReminderPermission();
+      await scheduleStreakReminder(useOnboardingStore.getState().progress, todayKey());
+    })();
+  }, [mode]);
 
   if (!session) {
     return (
@@ -224,6 +244,45 @@ export default function SessionScreen() {
             <CheckBurst />
             <Mascot state="celebrate" size={MASCOT_SIZE} />
             <Text style={styles.doneTitle}>Séance terminée</Text>
+
+            {/* Récompenses de la séance : XP + série (+ joker éventuel). */}
+            {xpEvent ? (
+              <Text style={styles.doneXp}>
+                +{xpEvent.amount} XP
+                {xpEvent.bonusApplied ? (
+                  <Text style={styles.doneXpBonus}>  · bonus série</Text>
+                ) : null}
+              </Text>
+            ) : null}
+            {streakEvent && streakEvent.streak > 0 ? (
+              <View style={styles.doneStreakRow}>
+                <Ionicons name="flame" size={18} color={color.accent} />
+                <Text style={styles.doneStreak}>
+                  Série : {streakEvent.streak} jour{streakEvent.streak > 1 ? 's' : ''}
+                </Text>
+              </View>
+            ) : null}
+            {freezeUsed ? (
+              <View style={styles.doneBanner}>
+                <Ionicons name="snow-outline" size={16} color={color.accent} />
+                <Text style={styles.doneBannerText}>Série sauvée grâce à ton joker</Text>
+              </View>
+            ) : null}
+            {levelUp ? (
+              <View style={styles.doneBanner}>
+                <Ionicons name="trending-up-outline" size={16} color={color.accent} />
+                <Text style={styles.doneBannerText}>
+                  Niveau {levelUp.level} — {levelUp.rank}
+                </Text>
+              </View>
+            ) : null}
+            {newBadges.map((event) => (
+              <View key={event.badge.id} style={styles.doneBanner}>
+                <Ionicons name="ribbon-outline" size={16} color={color.accent} />
+                <Text style={styles.doneBannerText}>Badge : {event.badge.titre}</Text>
+              </View>
+            ))}
+
             <Text style={styles.doneHint}>
               Bien joué. La régularité fait le redressement — reviens demain.
             </Text>
@@ -231,7 +290,10 @@ export default function SessionScreen() {
           <View style={styles.footer}>
             <PrimaryButton
               label="Retour au programme"
-              onPress={() => router.replace('/(tabs)/programme')}
+              onPress={() => {
+                clearProgressEvents();
+                router.replace('/(tabs)/programme');
+              }}
             />
           </View>
         </View>
@@ -362,6 +424,37 @@ const styles = StyleSheet.create({
   },
   doneTitle: {
     ...type.statNumberSmall,
+  },
+  doneXp: {
+    ...type.statNumberSmall,
+    color: color.accent,
+    fontVariant: ['tabular-nums'],
+  },
+  doneXpBonus: {
+    ...type.meta,
+    color: color.textSecond,
+  },
+  doneStreakRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.xs,
+  },
+  doneStreak: {
+    ...type.bodyMedium,
+  },
+  doneBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.xs,
+    borderWidth: borderWidth.hairline,
+    borderColor: color.accent,
+    borderRadius: radius.pill,
+    paddingHorizontal: space.md,
+    paddingVertical: space.xs,
+  },
+  doneBannerText: {
+    ...type.meta,
+    color: color.textPrimary,
   },
   doneHint: {
     ...type.body,
