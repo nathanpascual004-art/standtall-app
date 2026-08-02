@@ -8,9 +8,13 @@
  * - pas de série → aucune notification.
  *
  * La permission est demandée AU BON MOMENT : à la fin de la première
- * séance (jamais brutalement à l'ouverture). Sur le web : no-op complet.
+ * séance (jamais brutalement à l'ouverture).
+ *
+ * expo-notifications est OPTIONNEL : chargé paresseusement (require dans
+ * un try/catch). Si le module — notamment sa partie native — est absent
+ * du build, ou sur le web, toutes les fonctions sont des no-ops
+ * silencieux : l'app tourne, simplement sans rappels.
  */
-import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
 import { displayStreak, isActiveToday, type ProgressState } from './progress';
@@ -18,17 +22,42 @@ import { displayStreak, isActiveToday, type ProgressState } from './progress';
 /** Heure locale du rappel (fin de journée, avant la rupture). */
 const REMINDER_HOUR = 19;
 
+type NotificationsModule = typeof import('expo-notifications');
+
+/** undefined = pas encore tenté ; null = indisponible (no-op partout). */
+let cachedModule: NotificationsModule | null | undefined;
+
+/** Charge expo-notifications si présent dans le build — sinon null. */
+function getNotifications(): NotificationsModule | null {
+  if (Platform.OS === 'web') return null;
+  if (cachedModule !== undefined) return cachedModule;
+  try {
+    // Require paresseux : un build sans le module natif ne crashe pas.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    cachedModule = require('expo-notifications') as NotificationsModule;
+  } catch {
+    cachedModule = null;
+  }
+  return cachedModule;
+}
+
 /** Affichage des notifications quand l'app est au premier plan. */
 export function initNotifications(): void {
-  if (Platform.OS === 'web') return;
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowBanner: true,
-      shouldShowList: true,
-      shouldPlaySound: false,
-      shouldSetBadge: false,
-    }),
-  });
+  const notifications = getNotifications();
+  if (!notifications) return;
+  try {
+    notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowBanner: true,
+        shouldShowList: true,
+        shouldPlaySound: false,
+        shouldSetBadge: false,
+      }),
+    });
+  } catch {
+    // Module JS présent mais natif absent : on désactive pour la session.
+    cachedModule = null;
+  }
 }
 
 /**
@@ -36,12 +65,13 @@ export function initNotifications(): void {
  * séance — le moment où la série commence à valoir quelque chose).
  */
 export async function ensureReminderPermission(): Promise<boolean> {
-  if (Platform.OS === 'web') return false;
+  const notifications = getNotifications();
+  if (!notifications) return false;
   try {
-    const current = await Notifications.getPermissionsAsync();
+    const current = await notifications.getPermissionsAsync();
     if (current.granted) return true;
     if (!current.canAskAgain) return false;
-    const requested = await Notifications.requestPermissionsAsync();
+    const requested = await notifications.requestPermissionsAsync();
     return requested.granted;
   } catch {
     return false;
@@ -50,16 +80,18 @@ export async function ensureReminderPermission(): Promise<boolean> {
 
 /**
  * (Re)planifie LE rappel de série — annule l'ancien puis programme le
- * prochain 19 h pertinent. Sans permission ou sans série : rien.
+ * prochain 19 h pertinent. Sans module, sans permission ou sans série :
+ * no-op silencieux.
  */
 export async function scheduleStreakReminder(
   progress: ProgressState,
   todayKey: string,
 ): Promise<void> {
-  if (Platform.OS === 'web') return;
+  const notifications = getNotifications();
+  if (!notifications) return;
   try {
-    const permission = await Notifications.getPermissionsAsync();
-    await Notifications.cancelAllScheduledNotificationsAsync();
+    const permission = await notifications.getPermissionsAsync();
+    await notifications.cancelAllScheduledNotificationsAsync();
     if (!permission.granted) return;
 
     const streak = displayStreak(progress, todayKey);
@@ -74,13 +106,13 @@ export async function scheduleStreakReminder(
       when.setHours(REMINDER_HOUR, 0, 0, 0);
     }
 
-    await Notifications.scheduleNotificationAsync({
+    await notifications.scheduleNotificationAsync({
       content: {
         title: `Ta série de ${streak} jour${streak > 1 ? 's' : ''} va se casser 🔥`,
         body: '5 min suffisent pour la garder.',
       },
       trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        type: notifications.SchedulableTriggerInputTypes.DATE,
         date: when,
       },
     });
