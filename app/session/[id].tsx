@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -113,21 +114,26 @@ function SessionPlayer({
             <Text style={styles.cibleLabel}>{exercise.cible}</Text>
           </View>
           <Text style={styles.playerExercise}>{exercise.nom}</Text>
-          <Text style={styles.playerDescription}>{exercise.description}</Text>
+          <Text style={styles.playerDescription} numberOfLines={3}>
+            {exercise.description}
+          </Text>
         </View>
 
-        {/* Illustration du mouvement — carte contenue (pas plein écran),
-            entre la description et les contrôles. Placeholder si absente. */}
-        <BrandImage
-          source={exercise.image ?? null}
-          aspectRatio={4 / 3}
-          borderRadius={radius.card}
-          icon="body-outline"
-          // Ancré en haut : les visuels d'exercice ont la tête/le buste
-          // en haut du cadre — le recadrage centré les coupait.
-          contentPosition="top"
-          style={styles.playerImage}
-        />
+        {/* Illustration du mouvement — le gros de l'écran. Les visuels
+            sont en portrait 4:5 ; contentFit="contain" garantit la
+            posture ENTIÈRE (jamais coupée) quelle que soit la taille
+            d'écran, avec un letterbox minimal. */}
+        <View style={styles.playerImageWrap}>
+          {exercise.image ? (
+            <Image
+              source={exercise.image}
+              style={styles.playerImageFill}
+              contentFit="contain"
+            />
+          ) : (
+            <Ionicons name="body-outline" size={48} color={color.textMuted} />
+          )}
+        </View>
 
         <Text style={styles.playerClock}>{formatClock(remaining)}</Text>
       </View>
@@ -416,25 +422,40 @@ const styles = StyleSheet.create({
   },
   playerBody: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    gap: space.lg,
-    paddingBottom: space.lg,
+    gap: space.md,
+    paddingTop: space.md,
+    paddingBottom: space.sm,
   },
   playerHead: {
     alignItems: 'center',
-    gap: space.sm,
+    gap: space.xs,
   },
   playerExercise: {
-    ...type.statNumberSmall,
+    ...type.cardTitle,
+    fontSize: 19,
     textAlign: 'center',
   },
   playerDescription: {
     ...type.body,
     textAlign: 'center',
   },
-  playerImage: {
+  // L'image occupe tout l'espace restant entre description et timer.
+  playerImageWrap: {
+    flex: 1,
     alignSelf: 'stretch',
+    borderRadius: radius.card,
+    backgroundColor: color.surfaceAlt,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  playerImageFill: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   playerClock: {
     ...type.statNumber,
