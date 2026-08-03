@@ -145,11 +145,12 @@ function routineContent(
   session: (typeof SESSIONS)[number],
   levelLabel: string,
   router: ReturnType<typeof useRouter>,
+  onImage = false,
 ) {
   return (
     <>
       <Text style={styles.routineTitle}>{session.titre}</Text>
-      <Text style={styles.routineMeta}>
+      <Text style={[styles.routineMeta, onImage && styles.routineMetaOnImage]}>
         {session.durationMin} min · {session.exercises.length} exercices · {levelLabel}
       </Text>
       <PrimaryButton
@@ -294,7 +295,7 @@ export default function AccueilScreen() {
               borderRadius={radius.card}
               scrim
             >
-              {routineContent(nextSession, currentLevel.label, router)}
+              {routineContent(nextSession, currentLevel.label, router, true)}
             </BrandImage>
           ) : (
             <Card style={styles.routineCard}>
@@ -507,6 +508,10 @@ const styles = StyleSheet.create({
   routineMeta: {
     ...type.meta,
     color: color.textSecond,
+  },
+  // Sur photo : méta en clair pour rester lisible malgré l'image.
+  routineMetaOnImage: {
+    color: color.textPrimary,
   },
   routineButton: {
     marginTop: space.md,
