@@ -18,6 +18,7 @@ import {
   getSession,
   type Session,
 } from '@/lib/program';
+import { sessionCover } from '@/lib/covers';
 import { ensureReminderPermission, scheduleStreakReminder } from '@/lib/reminders';
 import { todayKey, useOnboardingStore } from '@/lib/store';
 import {
@@ -194,6 +195,7 @@ export default function SessionScreen() {
           >
             <Animated.View entering={cascade(0)}>
               <BrandImage
+                source={sessionCover(session.id)}
                 aspectRatio={16 / 9}
                 borderRadius={radius.tile}
                 icon="barbell-outline"

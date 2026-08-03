@@ -6,11 +6,13 @@ import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, Line } from 'react-native-svg';
 
+import { BrandImage } from '@/components/BrandImage';
 import { Card } from '@/components/Card';
 import { PressableScale } from '@/components/PressableScale';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { ProgressBar } from '@/components/ProgressBar';
 import { SectionLabel } from '@/components/SectionLabel';
+import { sessionCover } from '@/lib/covers';
 import {
   buildJourney,
   daysDoneInLevel,
@@ -40,7 +42,7 @@ const formatCm = (value: number) => `${value.toFixed(1).replace('.', ',')} cm`;
 const RING_SIZE = 132;
 const RING_STROKE = 9;
 const GEAR_SIZE = 44;
-const TILE_ICON_SIZE = 40;
+const TILE_ICON_SIZE = 34;
 const GHOST_ICON_SIZE = 128;
 
 /** Apparition en cascade des blocs principaux (sobre, respecte reduce motion). */
@@ -119,7 +121,14 @@ function StatTile({
         <Ionicons name={icon} size={19} color={color.accent} />
       </View>
       <View style={styles.tileText}>
-        <Text style={styles.tileLabel} numberOfLines={1}>
+        {/* adjustsFontSizeToFit (natif) : le label rétrécit plutôt que
+            d'être tronqué sur les petits écrans. */}
+        <Text
+          style={styles.tileLabel}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.7}
+        >
           {label}
         </Text>
         <Text style={styles.tileValue} numberOfLines={1}>
@@ -128,6 +137,34 @@ function StatTile({
         </Text>
       </View>
     </Card>
+  );
+}
+
+/** Contenu de la carte routine — partagé entre la version image et le fallback. */
+function routineContent(
+  session: (typeof SESSIONS)[number],
+  levelLabel: string,
+  router: ReturnType<typeof useRouter>,
+) {
+  return (
+    <>
+      <Text style={styles.routineTitle}>{session.titre}</Text>
+      <Text style={styles.routineMeta}>
+        {session.durationMin} min · {session.exercises.length} exercices · {levelLabel}
+      </Text>
+      <PrimaryButton
+        label="Démarrer la séance"
+        onPress={() => router.push(`/session/${session.id}?start=1`)}
+        style={styles.routineButton}
+      />
+      <Pressable
+        onPress={() => router.push(`/session/${session.id}`)}
+        accessibilityRole="button"
+        style={styles.routineLink}
+      >
+        <Text style={styles.routineLinkLabel}>Voir les exercices →</Text>
+      </Pressable>
+    </>
   );
 }
 
@@ -246,31 +283,27 @@ export default function AccueilScreen() {
           <StatTile icon="locate-outline" label="Objectif" value={String(objectifPct)} unit="%" />
         </Animated.View>
 
-        {/* Routine du jour. */}
+        {/* Routine du jour — couverture image de la séance quand l'asset
+            existe (lib/covers), carte actuelle en fallback. */}
         <Animated.View entering={cascade(2)}>
           <SectionLabel style={styles.routineLabel}>Routine du jour</SectionLabel>
-          <Card style={styles.routineCard}>
-            <View style={styles.routineGhost} pointerEvents="none">
-              <Ionicons name="body-outline" size={GHOST_ICON_SIZE} color={color.surfaceAlt} />
-            </View>
-            <Text style={styles.routineTitle}>{nextSession.titre}</Text>
-            <Text style={styles.routineMeta}>
-              {nextSession.durationMin} min · {nextSession.exercises.length} exercices ·{' '}
-              {currentLevel.label}
-            </Text>
-            <PrimaryButton
-              label="Démarrer la séance"
-              onPress={() => router.push(`/session/${nextSession.id}?start=1`)}
-              style={styles.routineButton}
-            />
-            <Pressable
-              onPress={() => router.push(`/session/${nextSession.id}`)}
-              accessibilityRole="button"
-              style={styles.routineLink}
+          {sessionCover(nextSession.id) ? (
+            <BrandImage
+              source={sessionCover(nextSession.id)}
+              aspectRatio={4 / 3}
+              borderRadius={radius.card}
+              scrim
             >
-              <Text style={styles.routineLinkLabel}>Voir les exercices →</Text>
-            </Pressable>
-          </Card>
+              {routineContent(nextSession, currentLevel.label, router)}
+            </BrandImage>
+          ) : (
+            <Card style={styles.routineCard}>
+              <View style={styles.routineGhost} pointerEvents="none">
+                <Ionicons name="body-outline" size={GHOST_ICON_SIZE} color={color.surfaceAlt} />
+              </View>
+              {routineContent(nextSession, currentLevel.label, router)}
+            </Card>
+          )}
         </Animated.View>
       </ScrollView>
     </SafeAreaView>
@@ -425,7 +458,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: space.xs + 2,
     paddingVertical: space.md,
-    paddingHorizontal: space.sm,
+    paddingHorizontal: space.xs + 2,
   },
   tileIcon: {
     width: TILE_ICON_SIZE,
@@ -442,7 +475,7 @@ const styles = StyleSheet.create({
   tileLabel: {
     ...type.sectionLabel,
     fontSize: 9,
-    letterSpacing: 0.8,
+    letterSpacing: 0.6,
   },
   tileValue: {
     ...type.statNumberSmall,
