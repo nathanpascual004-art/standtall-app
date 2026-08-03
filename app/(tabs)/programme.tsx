@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BrandImage } from '@/components/BrandImage';
 import { Card } from '@/components/Card';
+import { HERO_PARCOURS, sessionCover } from '@/lib/covers';
 import { PressableScale } from '@/components/PressableScale';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { SectionLabel } from '@/components/SectionLabel';
@@ -30,6 +31,7 @@ const NODE_SIZE = 46;
 const NODE_CURRENT_SIZE = 66;
 const SEGMENT_HEIGHT = 26;
 const SEGMENT_WIDTH = 4;
+const NODE_THUMB_SIZE = 26;
 
 const cascade = (index: number) =>
   FadeInDown.delay(index * staggerDelay)
@@ -105,9 +107,19 @@ function DayNode({
       {isCurrent ? (
         <Text style={styles.currentLabel}>{advancedToday ? 'Demain' : "Aujourd'hui"}</Text>
       ) : null}
-      <Text style={[styles.nodeMeta, locked && styles.nodeMetaLocked]}>
-        Jour {day.index + 1} · {day.session.titre}
-      </Text>
+      <View style={styles.nodeMetaRow}>
+        {/* Vignette carrée de la séance (placeholder tant que sans asset). */}
+        <BrandImage
+          source={sessionCover(day.session.id)}
+          height={NODE_THUMB_SIZE}
+          borderRadius={radius.tile}
+          icon="body-outline"
+          style={[styles.nodeThumb, locked && styles.nodeThumbLocked]}
+        />
+        <Text style={[styles.nodeMeta, locked && styles.nodeMetaLocked]}>
+          Jour {day.index + 1} · {day.session.titre}
+        </Text>
+      </View>
     </View>
   );
 }
@@ -268,7 +280,13 @@ export default function ParcoursScreen() {
           <>
             {/* Carte hero : niveau en cours + compte à rebours + streak. */}
             <Animated.View entering={cascade(0)} style={styles.heroBlock}>
-              <BrandImage aspectRatio={16 / 9} borderRadius={radius.tile} icon="body-outline" scrim>
+              <BrandImage
+                source={HERO_PARCOURS}
+                aspectRatio={16 / 9}
+                borderRadius={radius.tile}
+                icon="body-outline"
+                scrim
+              >
                 <View style={styles.heroRow}>
                   <View style={styles.heroText}>
                     <Text style={styles.heroTitle}>
@@ -471,6 +489,17 @@ const styles = StyleSheet.create({
   currentLabel: {
     ...type.sectionLabel,
     color: color.accent,
+  },
+  nodeMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.xs + 2,
+  },
+  nodeThumb: {
+    width: NODE_THUMB_SIZE,
+  },
+  nodeThumbLocked: {
+    opacity: 0.45,
   },
   nodeMeta: {
     ...type.meta,
