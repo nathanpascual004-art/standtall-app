@@ -95,6 +95,8 @@ export type QuizAnswers = {
   difficulty?: NutriDifficulty;
   /** Email de capture du bilan (écran 8). */
   email?: string;
+  /** Prénom (personnalisation accueil/profil) — optionnel. */
+  firstName?: string;
   // ── Champs de l'ancien flow — conservés pour les profils existants ──
   goal?: Goal;
   forwardHead?: ForwardHead;

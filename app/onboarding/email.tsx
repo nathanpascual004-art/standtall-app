@@ -27,10 +27,12 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 export default function EmailScreen() {
   const router = useRouter();
   const storedEmail = useOnboardingStore((state) => state.answers.email);
+  const storedName = useOnboardingStore((state) => state.answers.firstName);
   const storedCode = useOnboardingStore((state) => state.referralCode);
   const setAnswer = useOnboardingStore((state) => state.setAnswer);
   const setReferralCode = useOnboardingStore((state) => state.setReferralCode);
 
+  const [firstName, setFirstName] = useState(storedName ?? '');
   const [email, setEmail] = useState(storedEmail ?? '');
   const [codeOpen, setCodeOpen] = useState(Boolean(storedCode));
   const [rawCode, setRawCode] = useState(storedCode ?? '');
@@ -40,6 +42,8 @@ export default function EmailScreen() {
 
   /** Traite le code éventuel puis avance — jamais bloquant. */
   const finish = async (saveEmail: boolean) => {
+    // Le prénom personnalise l'accueil/profil — gardé même en « Passer ».
+    if (firstName.trim()) setAnswer('firstName', firstName.trim());
     if (saveEmail) setAnswer('email', email.trim());
     const code = normalizeReferralCode(rawCode);
     if (code && codeState !== 'invalid') {
@@ -72,6 +76,20 @@ export default function EmailScreen() {
 
         <TextInput
           style={[styles.input, webNoOutline]}
+          value={firstName}
+          onChangeText={setFirstName}
+          placeholder="Ton prénom"
+          placeholderTextColor={color.textMuted}
+          selectionColor={color.accent}
+          autoCapitalize="words"
+          autoCorrect={false}
+          autoComplete="given-name"
+          maxLength={30}
+          accessibilityLabel="Prénom"
+        />
+
+        <TextInput
+          style={[styles.input, styles.inputEmail, webNoOutline]}
           value={email}
           onChangeText={setEmail}
           placeholder="ton@email.com"
@@ -167,6 +185,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
     paddingVertical: space.lg,
     marginTop: space.xxl,
+  },
+  inputEmail: {
+    marginTop: space.md,
   },
   referralToggle: {
     flexDirection: 'row',

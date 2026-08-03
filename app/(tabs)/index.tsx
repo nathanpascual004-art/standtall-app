@@ -22,7 +22,9 @@ import {
 import { computePostureResult } from '@/lib/posture';
 import { SESSIONS } from '@/lib/program';
 import { displayStreak } from '@/lib/progress';
+import { ensureReminderPermission, scheduleStreakReminder } from '@/lib/reminders';
 import { todayKey, useOnboardingStore } from '@/lib/store';
+import { currentWeekKeys } from '@/lib/week';
 import { borderWidth, color, duration, font, radius, space, staggerDelay, type } from '@/theme/tokens';
 
 const DAYS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
@@ -109,18 +111,20 @@ function StatTile({
   label,
   value,
   unit,
+  subtitle,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   value: string;
   unit?: string;
+  subtitle: string;
 }) {
   return (
     <Card style={styles.tile}>
-      <View style={styles.tileIcon}>
-        <Ionicons name={icon} size={19} color={color.accent} />
-      </View>
-      <View style={styles.tileText}>
+      <View style={styles.tileHead}>
+        <View style={styles.tileIcon}>
+          <Ionicons name={icon} size={19} color={color.accent} />
+        </View>
         {/* adjustsFontSizeToFit (natif) : le label rétrécit plutôt que
             d'être tronqué sur les petits écrans. */}
         <Text
@@ -131,11 +135,14 @@ function StatTile({
         >
           {label}
         </Text>
-        <Text style={styles.tileValue} numberOfLines={1}>
-          {value}
-          {unit ? <Text style={styles.tileUnit}> {unit}</Text> : null}
-        </Text>
       </View>
+      <Text style={styles.tileValue} numberOfLines={1}>
+        {value}
+        {unit ? <Text style={styles.tileUnit}> {unit}</Text> : null}
+      </Text>
+      <Text style={styles.tileSubtitle} numberOfLines={1}>
+        {subtitle}
+      </Text>
     </Card>
   );
 }
@@ -189,14 +196,24 @@ export default function AccueilScreen() {
   );
   const currentScore = Math.min(100, result.postureScore + totalDone);
 
+  const firstName = answers.firstName?.trim();
   const streak = displayStreak(progress, todayKey());
   const levels = buildJourney();
   const currentLevel =
     levels.find((l) => journey.day < l.level * DAYS_PER_LEVEL) ?? levels[levels.length - 1];
   // Barre du niveau : jours faits dans le niveau en cours (0-7).
   const levelRatio = daysDoneInLevel(journey, currentLevel.level) / DAYS_PER_LEVEL;
-  // Objectif : part du programme de 28 jours déjà parcourue.
-  const objectifPct = Math.round((journey.day / JOURNEY_DAY_COUNT) * 100);
+
+  // Stats hebdo : séances de la semaine courante + objectif (1 jour actif/jour).
+  const weekKeys = currentWeekKeys();
+  const sessionsThisWeek = weekKeys.reduce(
+    (sum, key) => sum + (completedSessions[key]?.length ?? 0),
+    0,
+  );
+  const daysActiveThisWeek = weekKeys.filter(
+    (key) => (completedSessions[key]?.length ?? 0) > 0,
+  ).length;
+  const objectifPct = Math.round((daysActiveThisWeek / 7) * 100);
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -209,21 +226,28 @@ export default function AccueilScreen() {
         <View style={styles.header}>
           <View style={styles.headerText}>
             <Text style={styles.headerDate}>{formatToday()}</Text>
-            <Text style={styles.headerTitle}>Prêt à progresser ?</Text>
+            <Text style={styles.headerTitle}>
+              Prêt à progresser{firstName ? `, ${firstName}` : ''} ?
+            </Text>
             <Text style={styles.headerSub}>
               {doneToday.length > 0
                 ? 'Séance du jour faite — bien joué.'
-                : 'Ta routine du jour est prête.'}
+                : "Ta routine du jour t'attend."}
             </Text>
           </View>
           <PressableScale
-            onPress={() => router.push('/(tabs)/profil')}
+            onPress={() => {
+              // Cloche = rappels : demande la permission et (re)planifie.
+              void ensureReminderPermission().then(() =>
+                scheduleStreakReminder(useOnboardingStore.getState().progress, todayKey()),
+              );
+            }}
             accessibilityRole="button"
-            accessibilityLabel="Réglages"
+            accessibilityLabel="Notifications"
             hitSlop={8}
             style={styles.gear}
           >
-            <Ionicons name="settings-outline" size={20} color={color.textMuted} />
+            <Ionicons name="notifications-outline" size={20} color={color.textMuted} />
           </PressableScale>
         </View>
 
@@ -250,7 +274,7 @@ export default function AccueilScreen() {
               </View>
               <View style={styles.potentialText}>
                 <View style={styles.potentialHead}>
-                  <Text style={styles.potentialLabel}>Potentiel estimé</Text>
+                  <Text style={styles.potentialLabel}>Potentiel postural estimé</Text>
                   <Pressable
                     onPress={() => router.push('/(tabs)/progres')}
                     accessibilityRole="button"
@@ -275,13 +299,21 @@ export default function AccueilScreen() {
             label="Série"
             value={String(streak)}
             unit={streak > 1 ? 'jours' : 'jour'}
+            subtitle="Continue comme ça !"
           />
           <StatTile
             icon="calendar-outline"
             label="Séances"
-            value={String(progress.totalSessions)}
+            value={String(sessionsThisWeek)}
+            subtitle="Cette semaine"
           />
-          <StatTile icon="locate-outline" label="Objectif" value={String(objectifPct)} unit="%" />
+          <StatTile
+            icon="locate-outline"
+            label="Objectif"
+            value={String(objectifPct)}
+            unit="%"
+            subtitle="Objectif hebdo"
+          />
         </Animated.View>
 
         {/* Routine du jour — couverture image de la séance quand l'asset
@@ -295,14 +327,14 @@ export default function AccueilScreen() {
               borderRadius={radius.card}
               scrim
             >
-              {routineContent(nextSession, currentLevel.label, router, true)}
+              {routineContent(nextSession, `Niveau ${currentLevel.level}`, router, true)}
             </BrandImage>
           ) : (
             <Card style={styles.routineCard}>
               <View style={styles.routineGhost} pointerEvents="none">
                 <Ionicons name="body-outline" size={GHOST_ICON_SIZE} color={color.surfaceAlt} />
               </View>
-              {routineContent(nextSession, currentLevel.label, router)}
+              {routineContent(nextSession, `Niveau ${currentLevel.level}`, router)}
             </Card>
           )}
         </Animated.View>
@@ -335,6 +367,7 @@ const styles = StyleSheet.create({
   },
   headerDate: {
     ...type.sectionLabel,
+    color: color.accent,
   },
   headerTitle: {
     fontFamily: font.bold,
@@ -455,11 +488,14 @@ const styles = StyleSheet.create({
   },
   tile: {
     flex: 1,
+    gap: space.xs,
+    paddingVertical: space.md,
+    paddingHorizontal: space.sm,
+  },
+  tileHead: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.xs + 2,
-    paddingVertical: space.md,
-    paddingHorizontal: space.xs + 2,
   },
   tileIcon: {
     width: TILE_ICON_SIZE,
@@ -469,14 +505,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  tileText: {
-    flex: 1,
-    gap: space.xs / 2,
-  },
   tileLabel: {
     ...type.sectionLabel,
     fontSize: 9,
     letterSpacing: 0.6,
+    flex: 1,
   },
   tileValue: {
     ...type.statNumberSmall,
@@ -486,6 +519,11 @@ const styles = StyleSheet.create({
   },
   tileUnit: {
     ...type.meta,
+  },
+  tileSubtitle: {
+    ...type.meta,
+    fontSize: 10.5,
+    color: color.textMuted,
   },
   routineLabel: {
     marginTop: space.xl,

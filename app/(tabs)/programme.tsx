@@ -1,243 +1,105 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown, ReduceMotion, ZoomIn } from 'react-native-reanimated';
+import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BrandImage } from '@/components/BrandImage';
 import { Card } from '@/components/Card';
-import { HERO_PARCOURS, sessionCover } from '@/lib/covers';
 import { PressableScale } from '@/components/PressableScale';
 import { PrimaryButton } from '@/components/PrimaryButton';
+import { ProgressBar } from '@/components/ProgressBar';
 import { SectionLabel } from '@/components/SectionLabel';
+import { sessionCover } from '@/lib/covers';
 import {
   buildJourney,
   daysDoneInLevel,
   DAYS_PER_LEVEL,
-  JOURNEY_DAY_COUNT,
-  levelTrophyUnlocked,
-  nodeState,
-  type JourneyDay,
-  type JourneyNodeState,
+  JOURNEY_LEVELS,
 } from '@/lib/journey';
-import { PROGRAM_DISCLAIMER } from '@/lib/program';
-import { displayStreak, isActiveToday, localDayKey } from '@/lib/progress';
+import { PROGRAM_DISCLAIMER, SESSIONS } from '@/lib/program';
+import { levelProgress } from '@/lib/progress';
 import { todayKey, useOnboardingStore } from '@/lib/store';
+import { currentWeekKeys, WEEK_LETTERS } from '@/lib/week';
 import { borderWidth, color, duration, radius, space, staggerDelay, type } from '@/theme/tokens';
 
 /** Dimensions de layout locales (pas des tokens de design). */
-const NODE_SIZE = 46;
-const NODE_CURRENT_SIZE = 66;
-const SEGMENT_HEIGHT = 26;
-const SEGMENT_WIDTH = 4;
-const NODE_THUMB_SIZE = 26;
+const WEEK_DOT_SIZE = 36;
+const ICON_BUTTON_SIZE = 44;
 
 const cascade = (index: number) =>
   FadeInDown.delay(index * staggerDelay)
     .duration(duration.base)
     .reduceMotion(ReduceMotion.System);
 
-/** Segment vertical du chemin (lime = parcouru, gris = à venir). */
-function PathSegment({ reached }: { reached: boolean }) {
-  return (
-    <View
-      style={[styles.segment, { backgroundColor: reached ? color.accent : color.railOff }]}
-    />
-  );
-}
-
-/** Un nœud jour du parcours. */
-function DayNode({
-  day,
+/** Pastille d'un jour de la semaine (L M M J V S D). */
+function WeekDot({
+  letter,
+  dayOfMonth,
   state,
-  advancedToday,
 }: {
-  day: JourneyDay;
-  state: JourneyNodeState;
-  advancedToday: boolean;
+  letter: string;
+  dayOfMonth: number;
+  state: 'done' | 'today' | 'past' | 'future';
 }) {
-  const router = useRouter();
-  const isCurrent = state === 'current';
-  const locked = state === 'locked';
-
-  const node = (
-    <View
-      style={[
-        styles.node,
-        state === 'done' && styles.nodeDone,
-        isCurrent && styles.nodeCurrent,
-        locked && styles.nodeLocked,
-      ]}
-    >
-      {state === 'done' ? (
-        <Ionicons name="checkmark" size={22} color={color.onAccent} />
-      ) : isCurrent ? (
-        <Ionicons name="play" size={24} color={color.accent} />
-      ) : (
-        <Ionicons name="lock-closed" size={16} color={color.textMuted} />
-      )}
-    </View>
-  );
-
   return (
-    <View style={styles.nodeBlock}>
-      {locked ? (
-        node
-      ) : (
-        <PressableScale
-          onPress={() => router.push(`/session/${day.session.id}`)}
-          haptic="selection"
-          accessibilityRole="button"
-          accessibilityLabel={`Jour ${day.index + 1} — ${day.session.titre}`}
-        >
-          {isCurrent ? (
-            // Pop d'arrivée du nœud courant (respecte reduce motion).
-            <Animated.View
-              key={day.index}
-              entering={ZoomIn.springify().damping(14).reduceMotion(ReduceMotion.System)}
-            >
-              {node}
-            </Animated.View>
-          ) : (
-            node
-          )}
-        </PressableScale>
-      )}
-      {isCurrent ? (
-        <Text style={styles.currentLabel}>{advancedToday ? 'Demain' : "Aujourd'hui"}</Text>
-      ) : null}
-      <View style={styles.nodeMetaRow}>
-        {/* Vignette carrée de la séance (placeholder tant que sans asset). */}
-        <BrandImage
-          source={sessionCover(day.session.id)}
-          height={NODE_THUMB_SIZE}
-          borderRadius={radius.tile}
-          icon="body-outline"
-          style={[styles.nodeThumb, locked && styles.nodeThumbLocked]}
-        />
-        <Text style={[styles.nodeMeta, locked && styles.nodeMetaLocked]}>
-          Jour {day.index + 1} · {day.session.titre}
-        </Text>
-      </View>
-    </View>
-  );
-}
-
-/** Nœud trophée de fin de niveau. */
-function TrophyNode({ unlocked, level }: { unlocked: boolean; level: number }) {
-  return (
-    <View style={styles.nodeBlock}>
-      <View style={[styles.node, styles.trophy, unlocked && styles.trophyUnlocked]}>
-        <Ionicons
-          name="trophy"
-          size={20}
-          color={unlocked ? color.onAccent : color.textMuted}
-        />
-      </View>
-      <Text style={[styles.nodeMeta, !unlocked && styles.nodeMetaLocked]}>
-        {unlocked ? `Niveau ${level} complété` : `Trophée du niveau ${level}`}
-      </Text>
-    </View>
-  );
-}
-
-/**
- * Parcours nutrition léger : les 7 derniers jours de journal.
- * Dette technique (voir DETTE-TECHNIQUE.md) : l'onglet Nutrition complet
- * (scan, journal, favoris) migrera ici dans une passe dédiée — la tab
- * bar repassera alors à 4 onglets.
- */
-function NutritionJourney() {
-  const router = useRouter();
-  const meals = useOnboardingStore((state) => state.meals);
-  const targets = useOnboardingStore((state) => state.nutritionTargets);
-
-  if (!targets) {
-    return (
-      <Animated.View entering={cascade(1)}>
-        <Card style={styles.nutritionSetupCard}>
-          <SectionLabel>Parcours nutrition</SectionLabel>
-          <Text style={styles.nutritionSetupText}>
-            Configure ton suivi pour voir tes objectifs et ton journal ici.
+    <View style={styles.weekCell}>
+      <Text style={styles.weekLetter}>{letter}</Text>
+      <View
+        style={[
+          styles.weekDot,
+          state === 'done' && styles.weekDotDone,
+          state === 'today' && styles.weekDotToday,
+        ]}
+      >
+        {state === 'done' ? (
+          <Ionicons name="checkmark" size={16} color={color.onAccent} />
+        ) : state === 'future' ? (
+          <Ionicons name="lock-closed" size={12} color={color.textMuted} />
+        ) : (
+          <Text
+            style={[styles.weekDotLabel, state === 'today' && styles.weekDotLabelToday]}
+          >
+            {dayOfMonth}
           </Text>
-          <PrimaryButton
-            label="Configurer"
-            variant="secondary"
-            onPress={() => router.push('/nutrition-setup')}
-          />
-        </Card>
-      </Animated.View>
-    );
-  }
-
-  // 7 derniers jours (J-6 → aujourd'hui) : fait = au moins un repas journalisé.
-  const days = Array.from({ length: 7 }, (_, i) => {
-    const date = new Date();
-    date.setDate(date.getDate() - (6 - i));
-    const key = localDayKey(date);
-    return { key, done: (meals[key] ?? []).length > 0, isToday: i === 6 };
-  });
-
-  return (
-    <Animated.View entering={cascade(1)}>
-      <Card style={styles.nutritionCard}>
-        <SectionLabel>Suivi des 7 derniers jours</SectionLabel>
-        <Text style={styles.nutritionMeta}>
-          Objectif : {targets.calories} kcal / jour. Un nœud plein = un jour avec au
-          moins un repas journalisé.
-        </Text>
-        <View style={styles.nutritionPath}>
-          {days.map((day, index) => (
-            <View key={day.key} style={styles.nutritionNodeBlock}>
-              {index > 0 ? (
-                <View
-                  style={[
-                    styles.nutritionSegment,
-                    { backgroundColor: days[index - 1].done ? color.accent : color.railOff },
-                  ]}
-                />
-              ) : null}
-              <View
-                style={[
-                  styles.nutritionNode,
-                  day.done && styles.nutritionNodeDone,
-                  day.isToday && styles.nutritionNodeToday,
-                ]}
-              >
-                {day.done ? (
-                  <Ionicons name="checkmark" size={14} color={color.onAccent} />
-                ) : null}
-              </View>
-              <Text style={styles.nutritionNodeLabel}>
-                {day.isToday ? 'Auj.' : `J-${6 - index}`}
-              </Text>
-            </View>
-          ))}
-        </View>
-        <PrimaryButton
-          label="Scanner un repas"
-          onPress={() => router.push('/(tabs)/nutrition')}
-        />
-      </Card>
-    </Animated.View>
+        )}
+      </View>
+    </View>
   );
 }
 
-/** Onglet Parcours — le programme en chemin vertical façon jeu. */
-export default function ParcoursScreen() {
+/** Onglet Programme — niveau en cours, semaine, prochaine séance, niveaux. */
+export default function ProgrammeScreen() {
+  const router = useRouter();
   const journey = useOnboardingStore((state) => state.journey);
   const progress = useOnboardingStore((state) => state.progress);
-  const [category, setCategory] = useState<'posture' | 'nutrition'>('posture');
+  const completedSessions = useOnboardingStore((state) => state.completedSessions);
 
   const levels = useMemo(buildJourney, []);
   const today = todayKey();
-  const streak = displayStreak(progress, today);
-  const advancedToday =
-    journey.lastAdvanceDay === today || isActiveToday(progress, today);
-  const daysLeft = Math.max(0, JOURNEY_DAY_COUNT - journey.day);
   const currentLevel =
     levels.find((l) => journey.day < l.level * DAYS_PER_LEVEL) ?? levels[levels.length - 1];
+  const levelDone = daysDoneInLevel(journey, currentLevel.level);
+  const levelPct = Math.round((levelDone / DAYS_PER_LEVEL) * 100);
+  const xp = levelProgress(progress.xp);
+
+  const doneToday = completedSessions[today] ?? [];
+  const nextSession =
+    SESSIONS.find((session) => !doneToday.includes(session.id)) ?? SESSIONS[0];
+
+  // Semaine courante : fait / aujourd'hui / passé / à venir.
+  const weekKeys = currentWeekKeys();
+  const week = weekKeys.map((key, index) => {
+    const done = (completedSessions[key] ?? []).length > 0;
+    const isToday = key === today;
+    return {
+      key,
+      letter: WEEK_LETTERS[index],
+      dayOfMonth: Number(key.slice(-2)),
+      state: done ? ('done' as const) : isToday ? ('today' as const) : key < today ? ('past' as const) : ('future' as const),
+    };
+  });
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -246,104 +108,112 @@ export default function ParcoursScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>Parcours</Text>
-
-        {/* Toggle catégorie. */}
-        <View style={styles.toggle}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Programme</Text>
           <PressableScale
-            onPress={() => setCategory('posture')}
+            onPress={() => router.push('/(tabs)/profil')}
             accessibilityRole="button"
-            accessibilityLabel="Parcours posture"
-            style={[styles.pill, category === 'posture' && styles.pillActive]}
+            accessibilityLabel="Réglages"
+            hitSlop={8}
+            style={styles.iconButton}
           >
-            <Text style={[styles.pillLabel, category === 'posture' && styles.pillLabelActive]}>
-              Posture
-            </Text>
-          </PressableScale>
-          <PressableScale
-            onPress={() => setCategory('nutrition')}
-            accessibilityRole="button"
-            accessibilityLabel="Parcours nutrition"
-            style={[styles.pill, category === 'nutrition' && styles.pillActive]}
-          >
-            <Text
-              style={[styles.pillLabel, category === 'nutrition' && styles.pillLabelActive]}
-            >
-              Nutrition
-            </Text>
+            <Ionicons name="options-outline" size={20} color={color.textMuted} />
           </PressableScale>
         </View>
 
-        {category === 'nutrition' ? (
-          <NutritionJourney />
-        ) : (
-          <>
-            {/* Carte hero : niveau en cours + compte à rebours + streak. */}
-            <Animated.View entering={cascade(0)} style={styles.heroBlock}>
-              <BrandImage
-                source={HERO_PARCOURS}
-                aspectRatio={16 / 9}
-                borderRadius={radius.tile}
-                icon="body-outline"
-                scrim
-              >
-                <View style={styles.heroRow}>
-                  <View style={styles.heroText}>
-                    <Text style={styles.heroTitle}>
-                      Niveau {currentLevel.level} — {currentLevel.label}
-                    </Text>
-                    <Text style={styles.heroMeta}>
-                      {daysLeft > 0
-                        ? `${daysLeft} jour${daysLeft > 1 ? 's' : ''} restants sur le programme`
-                        : 'Programme complété'}
-                    </Text>
-                  </View>
-                  <View style={styles.heroStreak}>
-                    <Ionicons
-                      name="flame"
-                      size={18}
-                      color={streak > 0 ? color.accent : color.textMuted}
-                    />
-                    <Text style={styles.heroStreakValue}>{streak}</Text>
-                  </View>
-                </View>
-              </BrandImage>
-            </Animated.View>
+        {/* Carte niveau : identité à gauche, progression à droite. */}
+        <Animated.View entering={cascade(0)}>
+          <Card style={styles.levelCard}>
+            <View style={styles.levelLeft}>
+              <SectionLabel>Niveau</SectionLabel>
+              <Text style={styles.levelName}>{currentLevel.label}</Text>
+              <Text style={styles.levelMeta}>
+                Niveau {currentLevel.level} sur {JOURNEY_LEVELS}
+              </Text>
+            </View>
+            <View style={styles.levelRight}>
+              <Text style={styles.levelProgressLabel}>Progression du niveau</Text>
+              <Text style={styles.levelPct}>{levelPct}%</Text>
+              <ProgressBar progress={levelDone / DAYS_PER_LEVEL} />
+              <Text style={styles.levelXp}>
+                {xp.current} / {xp.needed} XP
+              </Text>
+            </View>
+          </Card>
+        </Animated.View>
 
-            {/* Le chemin vertical, niveau par niveau. */}
-            {levels.map((level) => (
-              <View key={level.level}>
-                <View style={styles.levelHeader}>
-                  <SectionLabel>{`Niveau ${level.level}`}</SectionLabel>
-                  <Text style={styles.levelGauge}>
-                    jour {daysDoneInLevel(journey, level.level)} / {DAYS_PER_LEVEL}
-                  </Text>
-                  <Text style={styles.levelDifficulty}>{level.label}</Text>
-                </View>
-
-                <View style={styles.path}>
-                  {level.days.map((day) => (
-                    <View key={day.index} style={styles.pathItem}>
-                      {day.dayInLevel > 1 || day.level > 1 ? (
-                        <PathSegment reached={journey.day >= day.index} />
-                      ) : null}
-                      <DayNode
-                        day={day}
-                        state={nodeState(journey, day.index)}
-                        advancedToday={advancedToday}
-                      />
-                    </View>
-                  ))}
-                  <PathSegment reached={levelTrophyUnlocked(journey, level.level)} />
-                  <TrophyNode
-                    unlocked={levelTrophyUnlocked(journey, level.level)}
-                    level={level.level}
-                  />
-                </View>
-              </View>
+        {/* Séances de la semaine. */}
+        <Animated.View entering={cascade(1)}>
+          <SectionLabel style={styles.sectionLabel}>Séances de la semaine</SectionLabel>
+          <Card style={styles.weekCard}>
+            {week.map((day) => (
+              <WeekDot
+                key={day.key}
+                letter={day.letter}
+                dayOfMonth={day.dayOfMonth}
+                state={day.state}
+              />
             ))}
-          </>
-        )}
+          </Card>
+        </Animated.View>
+
+        {/* Prochaine séance. */}
+        <Animated.View entering={cascade(2)}>
+          <SectionLabel style={styles.sectionLabel}>Prochaine séance</SectionLabel>
+          <BrandImage
+            source={sessionCover(nextSession.id)}
+            aspectRatio={16 / 9}
+            borderRadius={radius.card}
+            icon="body-outline"
+            scrim
+          >
+            <Text style={styles.nextTitle}>{nextSession.titre}</Text>
+            <Text style={styles.nextMeta}>
+              {nextSession.durationMin} min · {nextSession.exercises.length} exercices
+            </Text>
+            <PrimaryButton
+              label="Commencer"
+              onPress={() => router.push(`/session/${nextSession.id}?start=1`)}
+              style={styles.nextButton}
+            />
+          </BrandImage>
+        </Animated.View>
+
+        {/* Les niveaux du programme. */}
+        <Animated.View entering={cascade(3)}>
+          <SectionLabel style={styles.sectionLabel}>Programme</SectionLabel>
+          <View style={styles.levelList}>
+            {levels.map((level) => {
+              const done = daysDoneInLevel(journey, level.level);
+              const isCurrent = level.level === currentLevel.level;
+              const locked = journey.day < (level.level - 1) * DAYS_PER_LEVEL;
+              return (
+                <Card
+                  key={level.level}
+                  style={[styles.levelRow, isCurrent && styles.levelRowActive]}
+                >
+                  <View style={styles.levelRowText}>
+                    <Text
+                      style={[styles.levelRowName, locked && styles.levelRowNameLocked]}
+                    >
+                      {level.label}
+                    </Text>
+                    <Text style={styles.levelRowMeta}>
+                      {done}/{DAYS_PER_LEVEL} jours
+                    </Text>
+                  </View>
+                  {locked ? (
+                    <Ionicons name="lock-closed" size={16} color={color.textMuted} />
+                  ) : (
+                    <Text style={styles.levelRowCount}>
+                      {done}/{DAYS_PER_LEVEL}
+                    </Text>
+                  )}
+                </Card>
+              );
+            })}
+          </View>
+        </Animated.View>
 
         <Text style={styles.disclaimer}>{PROGRAM_DISCLAIMER}</Text>
       </ScrollView>
@@ -364,201 +234,138 @@ const styles = StyleSheet.create({
     paddingTop: space.md,
     paddingBottom: space.xl,
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: space.md,
+  },
   title: {
     ...type.screenTitle,
   },
-  toggle: {
-    flexDirection: 'row',
-    gap: space.sm,
-    marginTop: space.lg,
-  },
-  pill: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: space.md,
+  iconButton: {
+    width: ICON_BUTTON_SIZE,
+    height: ICON_BUTTON_SIZE,
     borderRadius: radius.pill,
     backgroundColor: color.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  levelCard: {
+    flexDirection: 'row',
+    gap: space.lg,
+    marginTop: space.lg,
+    padding: space.lg,
+  },
+  levelLeft: {
+    flex: 1,
+    gap: space.xs,
+  },
+  levelName: {
+    ...type.cardTitle,
+  },
+  levelMeta: {
+    ...type.meta,
+  },
+  levelRight: {
+    flex: 1,
+    gap: space.xs,
+  },
+  levelProgressLabel: {
+    ...type.meta,
+  },
+  levelPct: {
+    ...type.statNumberSmall,
+    fontVariant: ['tabular-nums'],
+  },
+  levelXp: {
+    ...type.meta,
+    fontVariant: ['tabular-nums'],
+  },
+  sectionLabel: {
+    marginTop: space.xl,
+    marginBottom: space.md,
+  },
+  weekCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: space.md,
+  },
+  weekCell: {
+    alignItems: 'center',
+    gap: space.xs,
+  },
+  weekLetter: {
+    ...type.sectionLabel,
+    fontSize: 10,
+  },
+  weekDot: {
+    width: WEEK_DOT_SIZE,
+    height: WEEK_DOT_SIZE,
+    borderRadius: radius.pill,
+    backgroundColor: color.surfaceAlt,
     borderWidth: borderWidth.hairline,
     borderColor: color.border,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  pillActive: {
+  weekDotDone: {
     backgroundColor: color.accent,
     borderColor: color.accent,
   },
-  pillLabel: {
-    ...type.sectionLabel,
-    color: color.textSecond,
+  weekDotToday: {
+    borderWidth: 2,
+    borderColor: color.accent,
+    backgroundColor: color.surface,
   },
-  pillLabelActive: {
-    color: color.onAccent,
+  weekDotLabel: {
+    ...type.meta,
+    fontVariant: ['tabular-nums'],
   },
-  heroBlock: {
-    marginTop: space.lg,
+  weekDotLabelToday: {
+    color: color.accent,
   },
-  heroRow: {
+  nextTitle: {
+    ...type.cardTitle,
+  },
+  nextMeta: {
+    ...type.meta,
+    color: color.textPrimary,
+    marginTop: space.xs / 2,
+  },
+  nextButton: {
+    marginTop: space.md,
+  },
+  levelList: {
+    gap: space.sm,
+  },
+  levelRow: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     gap: space.md,
+    padding: space.lg,
   },
-  heroText: {
+  levelRowActive: {
+    borderWidth: borderWidth.hairline,
+    borderColor: color.accent,
+  },
+  levelRowText: {
     flex: 1,
     gap: space.xs / 2,
   },
-  heroTitle: {
-    ...type.cardTitle,
-  },
-  heroMeta: {
-    ...type.meta,
-    color: color.textSecond,
-  },
-  heroStreak: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.xs,
-    backgroundColor: color.scrim,
-    borderRadius: radius.pill,
-    paddingHorizontal: space.md,
-    paddingVertical: space.xs,
-  },
-  heroStreakValue: {
+  levelRowName: {
     ...type.bodyMedium,
-    fontVariant: ['tabular-nums'],
   },
-  levelHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-    marginTop: space.xxl,
-    marginBottom: space.md,
-  },
-  levelGauge: {
-    ...type.meta,
-    fontVariant: ['tabular-nums'],
-    flex: 1,
-  },
-  levelDifficulty: {
-    ...type.meta,
+  levelRowNameLocked: {
     color: color.textMuted,
   },
-  path: {
-    alignItems: 'center',
+  levelRowMeta: {
+    ...type.meta,
   },
-  pathItem: {
-    alignItems: 'center',
-  },
-  segment: {
-    width: SEGMENT_WIDTH,
-    height: SEGMENT_HEIGHT,
-    borderRadius: SEGMENT_WIDTH / 2,
-  },
-  nodeBlock: {
-    alignItems: 'center',
-    gap: space.xs,
-  },
-  node: {
-    width: NODE_SIZE,
-    height: NODE_SIZE,
-    borderRadius: radius.pill,
-    backgroundColor: color.surfaceAlt,
-    borderWidth: borderWidth.hairline,
-    borderColor: color.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  nodeDone: {
-    backgroundColor: color.accent,
-    borderColor: color.accent,
-  },
-  nodeCurrent: {
-    width: NODE_CURRENT_SIZE,
-    height: NODE_CURRENT_SIZE,
-    backgroundColor: color.surface,
-    borderWidth: 3,
-    borderColor: color.accent,
-  },
-  nodeLocked: {
-    backgroundColor: color.surface,
-  },
-  trophy: {
-    backgroundColor: color.surface,
-  },
-  trophyUnlocked: {
-    backgroundColor: color.accent,
-    borderColor: color.accent,
-  },
-  currentLabel: {
-    ...type.sectionLabel,
+  levelRowCount: {
+    ...type.bodyMedium,
     color: color.accent,
-  },
-  nodeMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.xs + 2,
-  },
-  nodeThumb: {
-    width: NODE_THUMB_SIZE,
-  },
-  nodeThumbLocked: {
-    opacity: 0.45,
-  },
-  nodeMeta: {
-    ...type.meta,
-    textAlign: 'center',
-  },
-  nodeMetaLocked: {
-    color: color.textMuted,
-  },
-  nutritionSetupCard: {
-    marginTop: space.lg,
-    padding: space.lg,
-    gap: space.md,
-  },
-  nutritionSetupText: {
-    ...type.body,
-  },
-  nutritionCard: {
-    marginTop: space.lg,
-    padding: space.lg,
-    gap: space.md,
-  },
-  nutritionMeta: {
-    ...type.body,
-  },
-  nutritionPath: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    marginVertical: space.sm,
-  },
-  nutritionNodeBlock: {
-    alignItems: 'center',
-    gap: space.xs,
-    flex: 1,
-  },
-  nutritionSegment: {
-    display: 'none',
-  },
-  nutritionNode: {
-    width: 26,
-    height: 26,
-    borderRadius: radius.pill,
-    backgroundColor: color.surfaceAlt,
-    borderWidth: borderWidth.hairline,
-    borderColor: color.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  nutritionNodeDone: {
-    backgroundColor: color.accent,
-    borderColor: color.accent,
-  },
-  nutritionNodeToday: {
-    borderWidth: 2,
-    borderColor: color.accent,
-  },
-  nutritionNodeLabel: {
-    ...type.meta,
-    fontSize: 10,
+    fontVariant: ['tabular-nums'],
   },
   disclaimer: {
     ...type.meta,

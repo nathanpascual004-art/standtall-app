@@ -160,12 +160,19 @@ export default function NutritionScreen() {
   const [draft, setDraft] = useState<DraftMeal | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [userHint, setUserHint] = useState('');
+  const [descOpen, setDescOpen] = useState(false);
   const [barcodeOpen, setBarcodeOpen] = useState(false);
   const [barcode, setBarcode] = useState('');
+  const [manualOpen, setManualOpen] = useState(false);
+  const [manual, setManual] = useState({ nom: '', kcal: '', p: '', g: '', l: '' });
 
   const todayMeals = meals[todayKey()] ?? [];
   const glasses = water[todayKey()] ?? 0;
   const tip = tipOfDay(todayKey());
+  // Suivi rapide : repas vs objectif déclaré, le surplus compte en collations.
+  const mealsTarget = useOnboardingStore.getState().answers.mealsPerDay ?? 3;
+  const mealsCount = Math.min(todayMeals.length, mealsTarget);
+  const snacksCount = Math.min(2, Math.max(0, todayMeals.length - mealsTarget));
   const consumed = todayMeals.reduce(
     (total, meal) => ({
       calories: total.calories + meal.calories,
@@ -307,6 +314,20 @@ export default function NutritionScreen() {
     openDraft(scan);
   };
 
+  const handleManualAdd = () => {
+    const kcal = toInt(manual.kcal);
+    if (!manual.nom.trim() || kcal <= 0) return;
+    addMeal({
+      nom: manual.nom.trim(),
+      calories: kcal,
+      proteinesG: toInt(manual.p),
+      glucidesG: toInt(manual.g),
+      lipidesG: toInt(manual.l),
+    });
+    setManual({ nom: '', kcal: '', p: '', g: '', l: '' });
+    setManualOpen(false);
+  };
+
   const handleAddMeal = () => {
     if (!draft || !draft.nom.trim() || draft.items.length === 0) return;
     const totals = computeScanTotals(draft.items.map(scaleDraftItem));
@@ -354,13 +375,24 @@ export default function NutritionScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <SectionLabel style={styles.kicker}>Ton carburant</SectionLabel>
-        <Text style={styles.title}>Optimise ta récupération</Text>
+        <View style={styles.headerRow}>
+          <Text style={styles.title}>Nutrition</Text>
+          <PressableScale
+            onPress={() => router.push('/(tabs)/profil')}
+            accessibilityRole="button"
+            accessibilityLabel="Réglages"
+            hitSlop={8}
+            style={styles.iconButton}
+          >
+            <Ionicons name="options-outline" size={20} color={color.textMuted} />
+          </PressableScale>
+        </View>
         <Text style={styles.date}>{formatToday()}</Text>
 
-        {/* Hero : anneau calories restantes + macros — les vraies données. */}
+        {/* Aperçu du jour : anneau calories restantes + macros — vraies données. */}
         <Animated.View entering={cascade(0)}>
           <Card style={styles.heroCard}>
+            <SectionLabel>Aperçu du jour</SectionLabel>
             <View style={styles.heroRow}>
               <CaloriesRing consumed={consumed.calories} target={targets.calories} />
               <View style={styles.macroColumn}>
@@ -399,49 +431,214 @@ export default function NutritionScreen() {
           </Card>
         </Animated.View>
 
+        {/* Conseil du jour — statique, honnête, tourne chaque jour. */}
         <Animated.View entering={cascade(1)}>
-          <SectionLabel style={styles.hintLabel}>Aide l'IA (optionnel)</SectionLabel>
-          <TextInput
-            style={[styles.hintInput, webNoOutline]}
-            value={userHint}
-            onChangeText={setUserHint}
-            placeholder="ex. poulet riz ~300 g"
-            placeholderTextColor={color.textMuted}
-            selectionColor={color.accent}
-            accessibilityLabel="Aide l'IA"
-          />
-          <PrimaryButton
-            label={scanning ? 'Analyse en cours…' : 'Scanner un repas'}
-            disabled={scanning}
-            onPress={handleScan}
-            style={styles.scanButton}
-          />
-          <PrimaryButton
-            label="Code-barres"
-            variant="secondary"
-            onPress={() => setBarcodeOpen((open) => !open)}
-            style={styles.barcodeToggle}
-          />
-          {barcodeOpen ? (
-            <View style={styles.barcodeRow}>
-              <TextInput
-                style={[styles.barcodeInput, webNoOutline]}
-                value={barcode}
-                onChangeText={(text) => setBarcode(text.replace(/[^0-9]/g, ''))}
-                keyboardType="number-pad"
-                placeholder="3017624010701"
-                placeholderTextColor={color.textMuted}
-                selectionColor={color.accent}
-                accessibilityLabel="Code-barres EAN"
-              />
-              <PrimaryButton
-                label="Rechercher"
-                disabled={!barcode.trim() || scanning}
-                onPress={handleBarcodeSearch}
-                style={styles.barcodeSearch}
-              />
+          <Card style={styles.tipCard}>
+            <View style={styles.tipIcon}>
+              <Ionicons name="bulb-outline" size={17} color={color.accent} />
             </View>
-          ) : null}
+            <View style={styles.tipText}>
+              <SectionLabel>Conseil du jour</SectionLabel>
+              <Text style={styles.tipBody}>{tip}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={color.textMuted} />
+          </Card>
+        </Animated.View>
+
+        {/* Suivi rapide : hydratation (tap = +1 verre), repas, collations. */}
+        <Animated.View entering={cascade(2)}>
+          <SectionLabel style={styles.sectionGap}>Suivi rapide</SectionLabel>
+          <View style={styles.quickRow}>
+            <PressableScale
+              onPress={() => addWater(1)}
+              accessibilityRole="button"
+              accessibilityLabel="Ajouter un verre"
+              style={styles.quickTileWrap}
+            >
+              <Card style={styles.quickTile}>
+                <Ionicons name="water-outline" size={17} color={color.accent} />
+                <Text style={styles.quickLabel}>Hydratation</Text>
+                <Text style={styles.quickValue}>{formatWater(glasses)}</Text>
+                <View style={styles.quickRail}>
+                  <View
+                    style={[styles.quickFill, { width: `${Math.round(waterRatio(glasses) * 100)}%` }]}
+                  />
+                </View>
+              </Card>
+            </PressableScale>
+            <Card style={[styles.quickTile, styles.quickTileWrap]}>
+              <Ionicons name="restaurant-outline" size={17} color={color.accent} />
+              <Text style={styles.quickLabel}>Repas</Text>
+              <Text style={styles.quickValue}>
+                {mealsCount} / {mealsTarget}
+              </Text>
+              <View style={styles.quickRail}>
+                <View
+                  style={[
+                    styles.quickFill,
+                    { width: `${Math.round((mealsCount / mealsTarget) * 100)}%` },
+                  ]}
+                />
+              </View>
+            </Card>
+            <Card style={[styles.quickTile, styles.quickTileWrap]}>
+              <Ionicons name="cafe-outline" size={17} color={color.accent} />
+              <Text style={styles.quickLabel}>Collations</Text>
+              <Text style={styles.quickValue}>{snacksCount} / 2</Text>
+              <View style={styles.quickRail}>
+                <View
+                  style={[styles.quickFill, { width: `${Math.round((snacksCount / 2) * 100)}%` }]}
+                />
+              </View>
+            </Card>
+          </View>
+        </Animated.View>
+
+        {/* Ajouter un repas — le scan CIQUAL reste le moteur derrière. */}
+        <Animated.View entering={cascade(3)}>
+          <SectionLabel style={styles.sectionGap}>Ajouter un repas</SectionLabel>
+          <View style={styles.addList}>
+            <PressableScale
+              onPress={handleScan}
+              accessibilityRole="button"
+              accessibilityLabel="Photographier un repas"
+              disabled={scanning}
+            >
+              <Card style={styles.addRow}>
+                <Ionicons name="camera-outline" size={19} color={color.accent} />
+                <Text style={styles.addLabel}>
+                  {scanning ? 'Analyse en cours…' : 'Photographier un repas'}
+                </Text>
+                <Ionicons name="chevron-forward" size={16} color={color.textMuted} />
+              </Card>
+            </PressableScale>
+
+            <PressableScale
+              onPress={() => setBarcodeOpen((open) => !open)}
+              accessibilityRole="button"
+              accessibilityLabel="Scanner un code-barres"
+            >
+              <Card style={styles.addRow}>
+                <Ionicons name="barcode-outline" size={19} color={color.accent} />
+                <Text style={styles.addLabel}>Scanner un code-barres</Text>
+                <Ionicons
+                  name={barcodeOpen ? 'chevron-down' : 'chevron-forward'}
+                  size={16}
+                  color={color.textMuted}
+                />
+              </Card>
+            </PressableScale>
+            {barcodeOpen ? (
+              <View style={styles.barcodeRow}>
+                <TextInput
+                  style={[styles.barcodeInput, webNoOutline]}
+                  value={barcode}
+                  onChangeText={(text) => setBarcode(text.replace(/[^0-9]/g, ''))}
+                  keyboardType="number-pad"
+                  placeholder="3017624010701"
+                  placeholderTextColor={color.textMuted}
+                  selectionColor={color.accent}
+                  accessibilityLabel="Code-barres EAN"
+                />
+                <PrimaryButton
+                  label="Rechercher"
+                  disabled={!barcode.trim() || scanning}
+                  onPress={handleBarcodeSearch}
+                  style={styles.barcodeSearch}
+                />
+              </View>
+            ) : null}
+
+            <PressableScale
+              onPress={() => setDescOpen((open) => !open)}
+              accessibilityRole="button"
+              accessibilityLabel="Décrire mon repas"
+            >
+              <Card style={styles.addRow}>
+                <Ionicons name="create-outline" size={19} color={color.accent} />
+                <Text style={styles.addLabel}>Décrire mon repas</Text>
+                <Ionicons
+                  name={descOpen ? 'chevron-down' : 'chevron-forward'}
+                  size={16}
+                  color={color.textMuted}
+                />
+              </Card>
+            </PressableScale>
+            {descOpen ? (
+              <View style={styles.descBlock}>
+                <TextInput
+                  style={[styles.hintInput, webNoOutline]}
+                  value={userHint}
+                  onChangeText={setUserHint}
+                  placeholder="ex. poulet riz ~300 g"
+                  placeholderTextColor={color.textMuted}
+                  selectionColor={color.accent}
+                  accessibilityLabel="Aide l'IA"
+                />
+                <Text style={styles.descHint}>
+                  Ta description guide l'analyse — photographie ensuite ton repas.
+                </Text>
+              </View>
+            ) : null}
+
+            <PressableScale
+              onPress={() => setManualOpen((open) => !open)}
+              accessibilityRole="button"
+              accessibilityLabel="Ajouter manuellement"
+            >
+              <Card style={styles.addRow}>
+                <Ionicons name="add-circle-outline" size={19} color={color.accent} />
+                <Text style={styles.addLabel}>Ajouter manuellement</Text>
+                <Ionicons
+                  name={manualOpen ? 'chevron-down' : 'chevron-forward'}
+                  size={16}
+                  color={color.textMuted}
+                />
+              </Card>
+            </PressableScale>
+            {manualOpen ? (
+              <Card style={styles.manualCard}>
+                <TextInput
+                  style={[styles.hintInput, webNoOutline]}
+                  value={manual.nom}
+                  onChangeText={(nom) => setManual({ ...manual, nom })}
+                  placeholder="Nom du repas"
+                  placeholderTextColor={color.textMuted}
+                  selectionColor={color.accent}
+                  accessibilityLabel="Nom du repas manuel"
+                />
+                <View style={styles.manualRow}>
+                  {(
+                    [
+                      ['kcal', 'kcal'],
+                      ['p', 'P (g)'],
+                      ['g', 'G (g)'],
+                      ['l', 'L (g)'],
+                    ] as const
+                  ).map(([key, label]) => (
+                    <TextInput
+                      key={key}
+                      style={[styles.manualInput, webNoOutline]}
+                      value={manual[key]}
+                      onChangeText={(text) =>
+                        setManual({ ...manual, [key]: text.replace(/[^0-9]/g, '').slice(0, 4) })
+                      }
+                      keyboardType="number-pad"
+                      placeholder={label}
+                      placeholderTextColor={color.textMuted}
+                      selectionColor={color.accent}
+                      accessibilityLabel={`Manuel ${label}`}
+                    />
+                  ))}
+                </View>
+                <PrimaryButton
+                  label="Ajouter au journal"
+                  disabled={!manual.nom.trim() || toInt(manual.kcal) <= 0}
+                  onPress={handleManualAdd}
+                />
+              </Card>
+            ) : null}
+          </View>
         </Animated.View>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -637,57 +834,6 @@ export default function NutritionScreen() {
             </View>
           )}
 
-          <PrimaryButton
-            label="Ajouter un repas"
-            variant="secondary"
-            disabled={scanning}
-            onPress={handleScan}
-            style={styles.addMealButton}
-          />
-        </Animated.View>
-
-        {/* Hydratation — compacte, persistée par jour (reset auto). */}
-        <Animated.View entering={cascade(3)}>
-          <Card style={styles.waterCard}>
-            <Ionicons name="water-outline" size={20} color={color.accent} />
-            <View style={styles.waterBody}>
-              <View style={styles.waterHead}>
-                <Text style={styles.waterLabel}>Hydratation</Text>
-                <Text style={styles.waterValue}>{formatWater(glasses)}</Text>
-              </View>
-              <View style={styles.waterRail}>
-                <View
-                  style={[styles.waterFill, { width: `${Math.round(waterRatio(glasses) * 100)}%` }]}
-                />
-              </View>
-            </View>
-            <PressableScale
-              onPress={() => addWater(-1)}
-              accessibilityRole="button"
-              accessibilityLabel="Retirer un verre"
-              hitSlop={8}
-              style={styles.waterButton}
-            >
-              <Ionicons name="remove" size={18} color={color.textSecond} />
-            </PressableScale>
-            <PressableScale
-              onPress={() => addWater(1)}
-              accessibilityRole="button"
-              accessibilityLabel="Ajouter un verre"
-              hitSlop={8}
-              style={[styles.waterButton, styles.waterButtonPlus]}
-            >
-              <Ionicons name="add" size={18} color={color.onAccent} />
-            </PressableScale>
-          </Card>
-        </Animated.View>
-
-        {/* Conseil du jour — statique, honnête, tourne chaque jour. */}
-        <Animated.View entering={cascade(4)}>
-          <Card style={styles.tipCard}>
-            <SectionLabel>Conseil du jour</SectionLabel>
-            <Text style={styles.tipText}>{tip}</Text>
-          </Card>
         </Animated.View>
 
         <Text style={styles.disclaimer}>
@@ -736,8 +882,19 @@ const styles = StyleSheet.create({
   introText: {
     ...type.body,
   },
-  kicker: {
-    color: color.accent,
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: space.md,
+  },
+  iconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.pill,
+    backgroundColor: color.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   heroCard: {
     marginTop: space.lg,
@@ -946,62 +1103,103 @@ const styles = StyleSheet.create({
     ...type.sectionLabel,
     color: color.textMuted,
   },
-  addMealButton: {
-    marginTop: space.md,
-  },
-  waterCard: {
+  tipCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.md,
     marginTop: space.lg,
     padding: space.lg,
   },
-  waterBody: {
-    flex: 1,
-    gap: space.xs,
-  },
-  waterHead: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-  },
-  waterLabel: {
-    ...type.bodyMedium,
-  },
-  waterValue: {
-    ...type.meta,
-    fontVariant: ['tabular-nums'],
-  },
-  waterRail: {
-    height: 6,
-    borderRadius: radius.pill,
-    backgroundColor: color.railOff,
-    overflow: 'hidden',
-  },
-  waterFill: {
-    height: '100%',
-    borderRadius: radius.pill,
-    backgroundColor: color.accent,
-  },
-  waterButton: {
-    width: 32,
-    height: 32,
+  tipIcon: {
+    width: 34,
+    height: 34,
     borderRadius: radius.pill,
     backgroundColor: color.surfaceAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  waterButtonPlus: {
-    backgroundColor: color.accent,
-  },
-  tipCard: {
-    marginTop: space.md,
-    padding: space.lg,
-    gap: space.sm,
-  },
   tipText: {
+    flex: 1,
+    gap: space.xs / 2,
+  },
+  tipBody: {
     ...type.body,
     color: color.textPrimary,
+  },
+  sectionGap: {
+    marginTop: space.xl,
+    marginBottom: space.md,
+  },
+  quickRow: {
+    flexDirection: 'row',
+    gap: space.sm,
+  },
+  quickTileWrap: {
+    flex: 1,
+  },
+  quickTile: {
+    gap: space.xs,
+    paddingVertical: space.md,
+    paddingHorizontal: space.sm,
+  },
+  quickLabel: {
+    ...type.sectionLabel,
+    fontSize: 9,
+    letterSpacing: 0.6,
+  },
+  quickValue: {
+    ...type.bodyMedium,
+    fontVariant: ['tabular-nums'],
+  },
+  quickRail: {
+    height: 5,
+    borderRadius: radius.pill,
+    backgroundColor: color.railOff,
+    overflow: 'hidden',
+  },
+  quickFill: {
+    height: '100%',
+    borderRadius: radius.pill,
+    backgroundColor: color.accent,
+  },
+  addList: {
+    gap: space.sm,
+  },
+  addRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    padding: space.lg,
+  },
+  addLabel: {
+    ...type.bodyMedium,
+    flex: 1,
+  },
+  descBlock: {
+    gap: space.xs,
+  },
+  descHint: {
+    ...type.meta,
+  },
+  manualCard: {
+    padding: space.md,
+    gap: space.sm,
+  },
+  manualRow: {
+    flexDirection: 'row',
+    gap: space.sm,
+  },
+  manualInput: {
+    ...type.bodyMedium,
+    flex: 1,
+    backgroundColor: color.bg,
+    borderRadius: radius.tile,
+    borderWidth: borderWidth.hairline,
+    borderColor: color.border,
+    paddingHorizontal: space.sm,
+    paddingVertical: space.sm,
+    textAlign: 'center',
+    fontVariant: ['tabular-nums'],
   },
   mealCard: {
     flexDirection: 'row',

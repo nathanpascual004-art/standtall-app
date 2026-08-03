@@ -16,26 +16,26 @@ export const HABITS: Habit[] = [
   {
     id: 'posture-check',
     titre: 'Corrige ta posture 3 fois',
-    description: 'Trois rappels dans la journée : épaules, menton, dos long.',
+    description: 'Épaules, menton, dos long.',
     icon: 'body-outline',
   },
   {
     id: 'decompression',
     titre: '30 secondes de décompression',
-    description: 'Bras levés ou suspension, épaules relâchées.',
+    description: 'Bras levés ou suspension.',
     icon: 'arrow-up-outline',
   },
   {
-    id: 'pause-ecran',
-    titre: 'Une pause écran par heure',
-    description: 'Lève-toi, marche, regarde loin.',
-    icon: 'phone-portrait-outline',
+    id: 'eau',
+    titre: "Bois 2 L d'eau",
+    description: 'Reste hydraté toute la journée.',
+    icon: 'water-outline',
   },
   {
-    id: 'eau',
-    titre: "Bois de l'eau régulièrement",
-    description: 'Un verre à chaque pause fait le job.',
-    icon: 'water-outline',
+    id: 'ecran-soir',
+    titre: "Pas d'écran avant de dormir",
+    description: 'Favorise un meilleur sommeil.',
+    icon: 'moon-outline',
   },
 ];
 

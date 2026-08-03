@@ -93,6 +93,7 @@ export default function ProfilScreen() {
   const reset = useOnboardingStore((state) => state.reset);
   const progress = useOnboardingStore((state) => state.progress);
   const level = levelProgress(progress.xp);
+  const firstName = answers.firstName?.trim();
   const { isPro } = useEntitlement();
 
   const [restoreFeedback, setRestoreFeedback] = useState<string | null>(null);
@@ -146,9 +147,44 @@ export default function ProfilScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>Profil</Text>
+        <View style={styles.headerRow}>
+          <Text style={styles.title}>Profil</Text>
+          <PressableScale
+            onPress={handleEditNutrition}
+            accessibilityRole="button"
+            accessibilityLabel="Réglages"
+            hitSlop={8}
+            style={styles.iconButton}
+          >
+            <Ionicons name="settings-outline" size={20} color={color.textMuted} />
+          </PressableScale>
+        </View>
 
+        {/* Bloc identité. */}
         <Animated.View entering={cascade(0)}>
+          <PressableScale
+            onPress={() => router.push('/recompenses')}
+            accessibilityRole="button"
+            accessibilityLabel="Mon niveau et mes récompenses"
+          >
+            <Card style={styles.identityCard}>
+              <View style={styles.avatar}>
+                <Text style={styles.avatarInitial}>
+                  {(firstName?.[0] ?? 'T').toUpperCase()}
+                </Text>
+              </View>
+              <View style={styles.identityText}>
+                <Text style={styles.identityName}>{firstName || 'Toi'}</Text>
+                <Text style={styles.identityLevel}>
+                  Niveau {level.level} · {level.rank}
+                </Text>
+              </View>
+              {chevron}
+            </Card>
+          </PressableScale>
+        </Animated.View>
+
+        <Animated.View entering={cascade(1)}>
           <SectionLabel style={styles.sectionLabel}>Mes infos</SectionLabel>
           <Card style={styles.sectionCard}>
             <Row first label="Taille" value={tailleCm ? `${tailleCm} cm` : '—'} />
@@ -161,7 +197,7 @@ export default function ProfilScreen() {
               value={profile ? ACTIVITY_LABELS[profile.activite] : '—'}
             />
             <Row
-              label={profile ? 'Modifier' : 'Configurer la nutrition'}
+              label="Modifier mes infos"
               onPress={handleEditNutrition}
               icon={chevron}
               labelColor={color.accent}
@@ -169,13 +205,17 @@ export default function ProfilScreen() {
           </Card>
         </Animated.View>
 
-        <Animated.View entering={cascade(1)}>
+        <Animated.View entering={cascade(2)}>
           <SectionLabel style={styles.sectionLabel}>Progression</SectionLabel>
           <Card style={styles.sectionCard}>
-            <Row first label="Niveau" value={`${level.level} — ${level.rank}`} />
-            <Row label="Record de série" value={`${progress.bestStreak} j`} />
             <Row
-              label="Récompenses"
+              first
+              label="Record de série"
+              value={`${progress.bestStreak} jour${progress.bestStreak > 1 ? 's' : ''}`}
+            />
+            <Row label="Séances complétées" value={String(progress.totalSessions)} />
+            <Row
+              label="Consulter mes statistiques"
               onPress={() => router.push('/recompenses')}
               icon={chevron}
               labelColor={color.accent}
@@ -189,13 +229,22 @@ export default function ProfilScreen() {
             <Row
               first
               label="Statut"
-              value={isPro ? 'Abonnement actif' : 'Version gratuite'}
+              value={isPro ? 'Premium' : 'Version gratuite'}
             />
-            <Row
-              label="Gérer mon abonnement"
-              onPress={() => openUrl(SUBSCRIPTIONS_URL)}
-              icon={external}
-            />
+            {isPro ? (
+              <Row
+                label="Gérer mon abonnement"
+                onPress={() => openUrl(SUBSCRIPTIONS_URL)}
+                icon={external}
+              />
+            ) : (
+              <Row
+                label="Découvrir Premium"
+                onPress={() => router.push('/paywall')}
+                icon={chevron}
+                labelColor={color.accent}
+              />
+            )}
             <Row
               label={restoring ? 'Restauration…' : 'Restaurer mes achats'}
               onPress={restoring ? undefined : handleRestore}
@@ -292,6 +341,50 @@ const styles = StyleSheet.create({
   },
   title: {
     ...type.screenTitle,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: space.md,
+  },
+  iconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.pill,
+    backgroundColor: color.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  identityCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    marginTop: space.lg,
+    padding: space.lg,
+  },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.pill,
+    backgroundColor: color.surfaceAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarInitial: {
+    ...type.cardTitle,
+    color: color.accent,
+  },
+  identityText: {
+    flex: 1,
+    gap: space.xs / 2,
+  },
+  identityName: {
+    ...type.cardTitle,
+  },
+  identityLevel: {
+    ...type.meta,
+    color: color.accent,
   },
   sectionLabel: {
     marginTop: space.xl,

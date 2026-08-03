@@ -18,7 +18,7 @@ export const JOURNEY_LEVELS = 4;
 export const JOURNEY_DAY_COUNT = DAYS_PER_LEVEL * JOURNEY_LEVELS;
 
 /** Intitulés de niveau sobres (pas d'emoji piment, pas de « croissance »). */
-export const LEVEL_LABELS = ['Fondations', 'Consolidation', 'Renforcement', 'Maîtrise'] as const;
+export const LEVEL_LABELS = ['Fondation', 'Équilibre', 'Posture avancée', 'Performance'] as const;
 
 export type JourneyDay = {
   /** Index global 0-based (0 = Jour 1). */
