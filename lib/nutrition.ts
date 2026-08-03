@@ -3,7 +3,7 @@
  * Estimation, à ajuster selon les résultats réels.
  * 100 % déterministe : les mêmes entrées produisent toujours les mêmes cibles.
  */
-import type { AgeRange, Gender } from './store';
+import type { AgeRange, Gender, NutriIntent, QuizAnswers } from './store';
 
 export type NutritionGoal = 'masse' | 'seche' | 'maintien';
 
@@ -64,6 +64,30 @@ export function ageFromRange(range: AgeRange): number {
     case '45+':
       return 50;
   }
+}
+
+/** Objectif d'onboarding → objectif de calcul (recomposition = sèche douce). */
+export const NUTRI_GOAL_MAP: Record<NutriIntent, NutritionGoal> = {
+  masse: 'masse',
+  maintien: 'maintien',
+  perte: 'seche',
+  'mieux-manger': 'maintien',
+};
+
+/**
+ * Profil nutrition dérivé des réponses d'onboarding (null si incomplet).
+ * Utilisé par les écrans d'analyse — Mifflin-St Jeor via computeTargets.
+ */
+export function buildProfileFromAnswers(answers: QuizAnswers): NutritionProfile | null {
+  if (!answers.poidsKg || !answers.heightCm || !answers.ageRange) return null;
+  return {
+    poidsKg: answers.poidsKg,
+    tailleCm: answers.heightCm,
+    age: ageFromRange(answers.ageRange),
+    sexe: answers.gender ?? 'autre',
+    activite: answers.activite ?? 'modere',
+    goal: NUTRI_GOAL_MAP[answers.nutriGoal ?? 'maintien'],
+  };
 }
 
 export function computeTargets(profile: NutritionProfile): NutritionTargets {

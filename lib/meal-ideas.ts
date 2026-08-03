@@ -29,14 +29,14 @@ export type MealMoment = (typeof MEAL_MOMENTS)[number];
 export const GOAL_TITLES: Record<NutriIntent, string> = {
   masse: 'Idées de repas pour ta prise de masse',
   maintien: 'Idées de repas pour ton maintien',
-  perte: 'Idées de repas pour ta perte de poids',
+  perte: 'Idées de repas pour ta recomposition',
   'mieux-manger': 'Idées de repas pour mieux manger',
 };
 
 export const GOAL_SUBTITLES: Record<NutriIntent, string> = {
   masse: 'De quoi soutenir le muscle et tes séances.',
   maintien: 'Équilibré, simple, sans prise de tête.',
-  perte: 'Rassasiant et doux — le muscle reste, l’énergie aussi.',
+  perte: 'Rassasiant et riche en protéines — le muscle reste, l’énergie aussi.',
   'mieux-manger': 'Des bases simples pour bien manger au quotidien.',
 };
 

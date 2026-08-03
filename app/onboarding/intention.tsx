@@ -31,7 +31,7 @@ export default function IntentionScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <Text style={styles.title}>Qu'est-ce que tu veux améliorer en priorité ?</Text>
+      <Text style={styles.title}>Qu'est-ce qui t'amène ?</Text>
 
       <View style={styles.cards}>
         {CHOICES.map((choice, index) => (

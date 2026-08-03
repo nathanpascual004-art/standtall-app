@@ -12,28 +12,35 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { OnboardingProgress } from '@/components/OnboardingProgress';
 import { PrimaryButton } from '@/components/PrimaryButton';
-import { questionCount, questionStep } from '@/lib/onboarding-flow';
+import { questionCount, questionStep, routeAfterPoids } from '@/lib/onboarding-flow';
 import { useOnboardingStore } from '@/lib/store';
 import { borderWidth, color, radius, space, type, webNoOutline } from '@/theme/tokens';
 
 const MIN_KG = 30;
 const MAX_KG = 250;
 
-/** Nutrition 4/5 — poids actuel (kg), pour Mifflin-St Jeor. */
+/** Nutrition — poids actuel (kg) pour Mifflin-St Jeor + poids cible optionnel. */
 export default function NutriPoidsScreen() {
   const router = useRouter();
   const intention = useOnboardingStore((state) => state.answers.intention);
   const stored = useOnboardingStore((state) => state.answers.poidsKg);
+  const storedCible = useOnboardingStore((state) => state.answers.poidsCibleKg);
   const setAnswer = useOnboardingStore((state) => state.setAnswer);
   const [raw, setRaw] = useState(stored ? String(stored) : '');
+  const [rawCible, setRawCible] = useState(storedCible ? String(storedCible) : '');
 
   const parsed = Number.parseInt(raw, 10);
   const isValid = Number.isFinite(parsed) && parsed >= MIN_KG && parsed <= MAX_KG;
 
+  const parsedCible = Number.parseInt(rawCible, 10);
+  const cibleValid =
+    Number.isFinite(parsedCible) && parsedCible >= MIN_KG && parsedCible <= MAX_KG;
+
   const handleContinue = () => {
     if (!isValid) return;
     setAnswer('poidsKg', parsed);
-    router.push('/onboarding/nutri-difficulte');
+    setAnswer('poidsCibleKg', cibleValid ? parsedCible : undefined);
+    router.push(routeAfterPoids(intention));
   };
 
   return (
@@ -60,14 +67,34 @@ export default function NutriPoidsScreen() {
             selectionColor={color.accent}
             maxLength={3}
             autoFocus
+            accessibilityLabel="Poids actuel"
           />
           <Text style={styles.unit}>kg</Text>
         </View>
-        {raw.length >= 2 && !isValid && raw.length >= 3 ? (
+        {raw.length >= 3 && !isValid ? (
           <Text style={styles.hint}>
             Entre un poids entre {MIN_KG} et {MAX_KG} kg.
           </Text>
         ) : null}
+
+        <Text style={styles.cibleLabel}>Poids cible (optionnel)</Text>
+        <View style={styles.inputRow}>
+          <TextInput
+            style={[styles.input, webNoOutline]}
+            value={rawCible}
+            onChangeText={(text) => setRawCible(text.replace(/[^0-9]/g, '').slice(0, 3))}
+            keyboardType="number-pad"
+            placeholder="—"
+            placeholderTextColor={color.textMuted}
+            selectionColor={color.accent}
+            maxLength={3}
+            accessibilityLabel="Poids cible optionnel"
+          />
+          <Text style={styles.unit}>kg</Text>
+        </View>
+        <Text style={styles.cibleHint}>
+          Juste pour situer ton cap — aucun rythme ni résultat promis.
+        </Text>
 
         <View style={styles.footer}>
           <PrimaryButton label="Continuer" disabled={!isValid} onPress={handleContinue} />
@@ -99,10 +126,11 @@ const styles = StyleSheet.create({
     borderWidth: borderWidth.hairline,
     borderColor: color.border,
     paddingHorizontal: space.lg,
-    marginTop: space.xxl,
+    marginTop: space.lg,
   },
   input: {
     flex: 1,
+    minWidth: 0,
     ...type.statNumberSmall,
     fontVariant: ['tabular-nums'],
     paddingVertical: space.lg,
@@ -111,6 +139,14 @@ const styles = StyleSheet.create({
     ...type.body,
   },
   hint: {
+    ...type.meta,
+    marginTop: space.sm,
+  },
+  cibleLabel: {
+    ...type.sectionLabel,
+    marginTop: space.xl,
+  },
+  cibleHint: {
     ...type.meta,
     marginTop: space.sm,
   },

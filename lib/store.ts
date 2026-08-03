@@ -95,6 +95,8 @@ export type QuizAnswers = {
   activite?: ActivityLevel;
   mealsPerDay?: 2 | 3 | 4 | 5;
   poidsKg?: number;
+  /** Poids cible optionnel (informatif — jamais de promesse chiffrée). */
+  poidsCibleKg?: number;
   difficulty?: NutriDifficulty;
   /** Email de capture du bilan (écran 8). */
   email?: string;

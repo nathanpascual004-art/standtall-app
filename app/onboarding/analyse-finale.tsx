@@ -1,4 +1,7 @@
+import { useEffect, useMemo } from 'react';
+
 import { AnalysisScreen } from '@/components/AnalysisScreen';
+import { buildProfileFromAnswers, computeTargets } from '@/lib/nutrition';
 import { hasNutrition, hasPosture, routeAfterFinale } from '@/lib/onboarding-flow';
 import { computePostureResult } from '@/lib/posture';
 import { useOnboardingStore } from '@/lib/store';
@@ -24,8 +27,20 @@ const AGE_LABELS = {
  */
 export default function AnalyseFinaleScreen() {
   const answers = useOnboardingStore((state) => state.answers);
-  const targets = useOnboardingStore((state) => state.nutritionTargets);
+  const setNutritionProfile = useOnboardingStore((state) => state.setNutritionProfile);
   const intention = answers.intention;
+
+  // Calculé ici (et pas lu du store) : « Les deux » saute l'analyse
+  // nutrition intermédiaire, cet écran est donc le seul chargement.
+  const profile = useMemo(() => buildProfileFromAnswers(answers), [answers]);
+  const targets = useMemo(() => (profile ? computeTargets(profile) : null), [profile]);
+
+  useEffect(() => {
+    if (!hasNutrition(intention) || !profile || !targets) return;
+    setNutritionProfile(profile, targets);
+    // Volontairement au montage uniquement : les réponses sont figées ici.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const sexe =
     answers.gender === 'homme' ? 'homme' : answers.gender === 'femme' ? 'femme' : 'profil';
@@ -42,7 +57,9 @@ export default function AnalyseFinaleScreen() {
         ]
       : []),
     ...(hasNutrition(intention) && targets
-      ? [`Besoins calculés : ~${targets.calories} kcal`]
+      ? [
+          `Besoins calculés : ~${targets.calories} kcal · ${targets.proteinesG} g de protéines`,
+        ]
       : []),
   ];
 

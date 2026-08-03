@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { OnboardingProgress } from '@/components/OnboardingProgress';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { QuizOption } from '@/components/QuizOption';
-import { questionCount, questionStep } from '@/lib/onboarding-flow';
+import { questionCount, questionStep, routeAfterTensions } from '@/lib/onboarding-flow';
 import { useOnboardingStore, type TensionZone } from '@/lib/store';
 import { color, duration, space, type } from '@/theme/tokens';
 
@@ -37,7 +37,7 @@ export default function TensionsScreen() {
   const handleContinue = () => {
     if (selected === undefined) return;
     setAnswer('tensions', selected);
-    router.push('/onboarding/posture-percu');
+    router.push(routeAfterTensions(intention));
   };
 
   return (

@@ -14,7 +14,7 @@ export default function NutriObjectifScreen() {
       options={[
         { value: 'masse', label: 'Prise de masse' },
         { value: 'maintien', label: 'Maintien' },
-        { value: 'perte', label: 'Perte de poids' },
+        { value: 'perte', label: 'Recomposition (moins de gras, plus de muscle)' },
         { value: 'mieux-manger', label: 'Juste mieux manger' },
       ]}
       nextHref="/onboarding/nutri-activite"
