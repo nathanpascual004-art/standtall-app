@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Image, type ImageSource } from 'expo-image';
+import { Image, type ImageContentPosition, type ImageSource } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { ReactNode } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
@@ -18,6 +18,8 @@ type BrandImageProps = {
   scrim?: boolean;
   /** Rayon (tuile par défaut). */
   borderRadius?: number;
+  /** Ancrage du recadrage cover (défaut : centre). */
+  contentPosition?: ImageContentPosition;
   /** Contenu superposé en bas (titre, méta…). */
   children?: ReactNode;
   style?: StyleProp<ViewStyle>;
@@ -35,6 +37,7 @@ export function BrandImage({
   icon = 'image-outline',
   scrim = false,
   borderRadius = radius.tile,
+  contentPosition = 'center',
   children,
   style,
 }: BrandImageProps) {
@@ -44,7 +47,12 @@ export function BrandImage({
     <View style={[styles.frame, frame, { borderRadius }, style]}>
       {source ? (
         <>
-          <Image source={source} style={StyleSheet.absoluteFill} contentFit="cover" />
+          <Image
+            source={source}
+            style={StyleSheet.absoluteFill}
+            contentFit="cover"
+            contentPosition={contentPosition}
+          />
           {/* Grade unifié : voile sombre + teinte lime discrète. */}
           <View style={[StyleSheet.absoluteFill, styles.veil]} />
           <View style={[StyleSheet.absoluteFill, styles.lime]} />

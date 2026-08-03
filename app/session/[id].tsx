@@ -108,11 +108,27 @@ function SessionPlayer({
       <ProgressBar progress={overall} height={4} />
 
       <View style={styles.playerBody}>
-        <View style={styles.cibleChip}>
-          <Text style={styles.cibleLabel}>{exercise.cible}</Text>
+        <View style={styles.playerHead}>
+          <View style={styles.cibleChip}>
+            <Text style={styles.cibleLabel}>{exercise.cible}</Text>
+          </View>
+          <Text style={styles.playerExercise}>{exercise.nom}</Text>
+          <Text style={styles.playerDescription}>{exercise.description}</Text>
         </View>
-        <Text style={styles.playerExercise}>{exercise.nom}</Text>
-        <Text style={styles.playerDescription}>{exercise.description}</Text>
+
+        {/* Illustration du mouvement — carte contenue (pas plein écran),
+            entre la description et les contrôles. Placeholder si absente. */}
+        <BrandImage
+          source={exercise.image ?? null}
+          aspectRatio={4 / 3}
+          borderRadius={radius.card}
+          icon="body-outline"
+          // Ancré en haut : les visuels d'exercice ont la tête/le buste
+          // en haut du cadre — le recadrage centré les coupait.
+          contentPosition="top"
+          style={styles.playerImage}
+        />
+
         <Text style={styles.playerClock}>{formatClock(remaining)}</Text>
       </View>
 
@@ -403,7 +419,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: space.lg,
-    paddingBottom: space.xxl,
+    paddingBottom: space.lg,
+  },
+  playerHead: {
+    alignItems: 'center',
+    gap: space.sm,
   },
   playerExercise: {
     ...type.statNumberSmall,
@@ -413,10 +433,12 @@ const styles = StyleSheet.create({
     ...type.body,
     textAlign: 'center',
   },
+  playerImage: {
+    alignSelf: 'stretch',
+  },
   playerClock: {
     ...type.statNumber,
     fontVariant: ['tabular-nums'],
-    marginTop: space.sm,
   },
   doneBody: {
     flex: 1,
