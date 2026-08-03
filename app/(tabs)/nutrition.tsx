@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Platform,
   ScrollView,
@@ -27,8 +27,9 @@ import {
   type ScanItem,
 } from '@/lib/foodScan';
 import { formatWater, waterRatio } from '@/lib/hydration';
+import { GOAL_TITLES } from '@/lib/meal-ideas';
 import { tipOfDay } from '@/lib/nutrition-tips';
-import { useOnboardingStore, todayKey, type SavedMeal } from '@/lib/store';
+import { useOnboardingStore, todayKey, type NutriIntent, type SavedMeal } from '@/lib/store';
 import {
   borderWidth,
   color,
@@ -155,6 +156,8 @@ export default function NutritionScreen() {
   const toggleFavoriteMeal = useOnboardingStore((state) => state.toggleFavoriteMeal);
   const water = useOnboardingStore((state) => state.water);
   const addWater = useOnboardingStore((state) => state.addWater);
+  const mealIdeaDraft = useOnboardingStore((state) => state.mealIdeaDraft);
+  const setMealIdeaDraft = useOnboardingStore((state) => state.setMealIdeaDraft);
 
   const [scanning, setScanning] = useState(false);
   const [draft, setDraft] = useState<DraftMeal | null>(null);
@@ -166,9 +169,29 @@ export default function NutritionScreen() {
   const [manualOpen, setManualOpen] = useState(false);
   const [manual, setManual] = useState({ nom: '', kcal: '', p: '', g: '', l: '' });
 
+  // Bonus « Idées de repas » : une idée tapée pré-remplit l'ajout manuel.
+  useEffect(() => {
+    if (!mealIdeaDraft) return;
+    setManual({
+      nom: mealIdeaDraft.nom,
+      kcal: String(mealIdeaDraft.calories),
+      p: String(mealIdeaDraft.proteinesG),
+      g: String(mealIdeaDraft.glucidesG),
+      l: String(mealIdeaDraft.lipidesG),
+    });
+    setManualOpen(true);
+    setMealIdeaDraft(null);
+  }, [mealIdeaDraft, setMealIdeaDraft]);
+
   const todayMeals = meals[todayKey()] ?? [];
   const glasses = water[todayKey()] ?? 0;
   const tip = tipOfDay(todayKey());
+  // Objectif de contenu des idées de repas (onboarding, sinon profil).
+  const answersGoal = useOnboardingStore.getState().answers.nutriGoal;
+  const ideasGoal: NutriIntent =
+    answersGoal ??
+    (profile?.goal === 'masse' ? 'masse' : profile?.goal === 'seche' ? 'perte' : 'maintien');
+
   // Suivi rapide : repas vs objectif déclaré, le surplus compte en collations.
   const mealsTarget = useOnboardingStore.getState().answers.mealsPerDay ?? 3;
   const mealsCount = Math.min(todayMeals.length, mealsTarget);
@@ -443,6 +466,22 @@ export default function NutritionScreen() {
             </View>
             <Ionicons name="chevron-forward" size={16} color={color.textMuted} />
           </Card>
+        </Animated.View>
+
+        {/* Idées de repas — contenu curé statique adapté à l'objectif. */}
+        <Animated.View entering={cascade(1)}>
+          <PressableScale
+            onPress={() => router.push('/idees-repas')}
+            accessibilityRole="button"
+            accessibilityLabel="Idées de repas"
+          >
+            <Card style={styles.ideasCard}>
+              <View style={styles.tipIcon}>
+                <Ionicons name="restaurant-outline" size={17} color={color.accent} />
+              </View>
+              <Text style={styles.ideasLabel}>{GOAL_TITLES[ideasGoal]} →</Text>
+            </Card>
+          </PressableScale>
         </Animated.View>
 
         {/* Suivi rapide : hydratation (tap = +1 verre), repas, collations. */}
@@ -1125,6 +1164,18 @@ const styles = StyleSheet.create({
   tipBody: {
     ...type.body,
     color: color.textPrimary,
+  },
+  ideasCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    marginTop: space.md,
+    padding: space.lg,
+  },
+  ideasLabel: {
+    ...type.bodyMedium,
+    color: color.accent,
+    flex: 1,
   },
   sectionGap: {
     marginTop: space.xl,

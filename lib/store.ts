@@ -24,6 +24,9 @@ import {
 /** Repas mémorisé pour les favoris — un MealEntry sans identifiant. */
 export type SavedMeal = Omit<MealEntry, 'id'>;
 
+/** Idée de repas sélectionnée — pré-remplit l'ajout manuel (transitoire). */
+export type MealIdeaDraft = SavedMeal;
+
 /** Objectif principal choisi à l'étape 1 (ancien flow — conservé pour compat). */
 export type Goal = 'taller' | 'posture' | 'back-pain' | 'presence';
 
@@ -144,6 +147,11 @@ type OnboardingState = {
   /** Verres d'eau bus par jour : { "2026-08-02": 5 } (reset auto par clé). */
   water: Record<string, number>;
   /**
+   * Idée de repas tapée dans « Idées de repas » — consommée par l'écran
+   * Nutrition pour pré-remplir l'ajout manuel. Jamais persisté.
+   */
+  mealIdeaDraft: MealIdeaDraft | null;
+  /**
    * Événements de la DERNIÈRE séance complétée (XP, joker, niveau,
    * badges) — transitoire, consommé par l'écran de fin pour les
    * célébrations, jamais persisté.
@@ -164,6 +172,7 @@ type OnboardingState = {
   toggleHabit: (habitId: string) => void;
   /** Ajoute (+1) ou retire (-1) un verre d'eau au compteur du jour. */
   addWater: (delta: 1 | -1) => void;
+  setMealIdeaDraft: (draft: MealIdeaDraft | null) => void;
   /** Vide les événements de célébration une fois affichés. */
   clearProgressEvents: () => void;
   reset: () => void;
@@ -217,6 +226,7 @@ const initialState = {
   habits: {} as Record<string, string[]>,
   habitsRewarded: {} as Record<string, string[]>,
   water: {} as Record<string, number>,
+  mealIdeaDraft: null as MealIdeaDraft | null,
   lastProgressEvents: [] as ProgressEvent[],
 } as const;
 
@@ -285,6 +295,7 @@ export const useOnboardingStore = create<OnboardingState>()(
           if (next === current) return state;
           return { water: { ...state.water, [day]: next } };
         }),
+      setMealIdeaDraft: (draft) => set({ mealIdeaDraft: draft }),
       clearProgressEvents: () => set({ lastProgressEvents: [] }),
       setNutritionDraft: (patch) =>
         set((state) => ({ nutritionDraft: { ...state.nutritionDraft, ...patch } })),

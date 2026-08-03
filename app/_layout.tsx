@@ -74,6 +74,7 @@ export default function RootLayout() {
           <Stack.Screen name="session/[id]" />
           <Stack.Screen name="nutrition-setup" />
           <Stack.Screen name="recompenses" />
+          <Stack.Screen name="idees-repas" />
         </Stack.Protected>
         <Stack.Screen name="paywall" />
       </Stack>
