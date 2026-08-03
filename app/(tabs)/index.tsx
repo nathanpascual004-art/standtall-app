@@ -40,7 +40,7 @@ const formatCm = (value: number) => `${value.toFixed(1).replace('.', ',')} cm`;
 const RING_SIZE = 132;
 const RING_STROKE = 9;
 const GEAR_SIZE = 44;
-const TILE_ICON_SIZE = 40;
+const TILE_ICON_SIZE = 34;
 const GHOST_ICON_SIZE = 128;
 
 /** Apparition en cascade des blocs principaux (sobre, respecte reduce motion). */
@@ -119,7 +119,14 @@ function StatTile({
         <Ionicons name={icon} size={19} color={color.accent} />
       </View>
       <View style={styles.tileText}>
-        <Text style={styles.tileLabel} numberOfLines={1}>
+        {/* adjustsFontSizeToFit (natif) : le label rétrécit plutôt que
+            d'être tronqué sur les petits écrans. */}
+        <Text
+          style={styles.tileLabel}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.7}
+        >
           {label}
         </Text>
         <Text style={styles.tileValue} numberOfLines={1}>
@@ -425,7 +432,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: space.xs + 2,
     paddingVertical: space.md,
-    paddingHorizontal: space.sm,
+    paddingHorizontal: space.xs + 2,
   },
   tileIcon: {
     width: TILE_ICON_SIZE,
@@ -442,7 +449,7 @@ const styles = StyleSheet.create({
   tileLabel: {
     ...type.sectionLabel,
     fontSize: 9,
-    letterSpacing: 0.8,
+    letterSpacing: 0.6,
   },
   tileValue: {
     ...type.statNumberSmall,
