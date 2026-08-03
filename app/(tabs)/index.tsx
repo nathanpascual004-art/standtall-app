@@ -273,20 +273,21 @@ export default function AccueilScreen() {
                 <Ionicons name="trending-up-outline" size={17} color={color.accent} />
               </View>
               <View style={styles.potentialText}>
-                <View style={styles.potentialHead}>
-                  <Text style={styles.potentialLabel}>Potentiel postural estimé</Text>
-                  <Pressable
-                    onPress={() => router.push('/(tabs)/progres')}
-                    accessibilityRole="button"
-                    accessibilityLabel="Voir mon analyse"
-                  >
-                    <Text style={styles.potentialLink}>Voir mon analyse →</Text>
-                  </Pressable>
-                </View>
+                <Text style={styles.potentialLabel}>Potentiel postural estimé</Text>
                 <Text style={styles.potentialValue}>
                   <Text style={styles.potentialCm}>+{formatCm(result.heightLossCm)}</Text>
                   <Text style={styles.potentialSuffix}> de hauteur posturale</Text>
                 </Text>
+                {/* Lien sur sa propre ligne : jamais tronqué ni superposé. */}
+                <Pressable
+                  onPress={() => router.push('/(tabs)/progres')}
+                  accessibilityRole="button"
+                  accessibilityLabel="Voir mon analyse"
+                  hitSlop={6}
+                  style={styles.potentialLinkRow}
+                >
+                  <Text style={styles.potentialLink}>Voir mon analyse →</Text>
+                </Pressable>
               </View>
             </View>
           </Card>
@@ -458,14 +459,12 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: space.xs / 2,
   },
-  potentialHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: space.sm,
-  },
   potentialLabel: {
     ...type.meta,
+  },
+  potentialLinkRow: {
+    alignSelf: 'flex-start',
+    marginTop: space.xs,
   },
   potentialValue: {
     ...type.body,
