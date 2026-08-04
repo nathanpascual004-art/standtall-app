@@ -8,6 +8,9 @@
     "scheme": "standtall",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#0a0d13",
+    "ios": {
+      "buildNumber": "1"
+    },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#0a0d13",
