@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -17,10 +18,10 @@ import { QuizOption } from '@/components/QuizOption';
 import { useOnboardingStore, type Gender } from '@/lib/store';
 import { borderWidth, color, radius, space, type, webNoOutline } from '@/theme/tokens';
 
-const GENDERS: { value: Gender; label: string }[] = [
-  { value: 'homme', label: 'Homme' },
-  { value: 'femme', label: 'Femme' },
-  { value: 'autre', label: 'Autre' },
+const GENDERS: { value: Gender; labelKey: string }[] = [
+  { value: 'homme', labelKey: 'onboarding.sexMale' },
+  { value: 'femme', labelKey: 'onboarding.sexFemale' },
+  { value: 'autre', labelKey: 'nutrition.setupGenderOther' },
 ];
 
 /**
@@ -29,6 +30,7 @@ const GENDERS: { value: Gender; label: string }[] = [
  */
 export default function ComplementScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const answers = useOnboardingStore((state) => state.answers);
   const draft = useOnboardingStore((state) => state.nutritionDraft);
   const setNutritionDraft = useOnboardingStore((state) => state.setNutritionDraft);
@@ -65,7 +67,7 @@ export default function ComplementScreen() {
       >
         <OnboardingProgress step={3} total={4} />
         <ScrollView showsVerticalScrollIndicator={false}>
-          <Text style={styles.title}>Encore quelques infos</Text>
+          <Text style={styles.title}>{t('nutrition.setupMoreInfo')}</Text>
 
           {needHeight ? (
             <View style={styles.inputRow}>
@@ -74,7 +76,7 @@ export default function ComplementScreen() {
                 value={taille}
                 onChangeText={(text) => setTaille(text.replace(/[^0-9]/g, '').slice(0, 3))}
                 keyboardType="number-pad"
-                placeholder="Taille"
+                placeholder={t('profile.height')}
                 placeholderTextColor={color.textMuted}
                 selectionColor={color.accent}
               />
@@ -89,11 +91,11 @@ export default function ComplementScreen() {
                 value={age}
                 onChangeText={(text) => setAge(text.replace(/[^0-9]/g, '').slice(0, 3))}
                 keyboardType="number-pad"
-                placeholder="Âge"
+                placeholder={t('nutrition.setupAgePlaceholder')}
                 placeholderTextColor={color.textMuted}
                 selectionColor={color.accent}
               />
-              <Text style={styles.unit}>ans</Text>
+              <Text style={styles.unit}>{t('nutrition.setupAgeUnit')}</Text>
             </View>
           ) : null}
 
@@ -102,7 +104,7 @@ export default function ComplementScreen() {
               {GENDERS.map((gender) => (
                 <QuizOption
                   key={gender.value}
-                  label={gender.label}
+                  label={t(gender.labelKey)}
                   selected={sexe === gender.value}
                   onPress={() => setSexe(gender.value)}
                 />
@@ -113,7 +115,7 @@ export default function ComplementScreen() {
 
         <View style={styles.footer}>
           <PrimaryButton
-            label="Continuer"
+            label={t('common.continue')}
             disabled={!tailleOk || !ageOk || !sexeOk}
             onPress={handleContinue}
           />

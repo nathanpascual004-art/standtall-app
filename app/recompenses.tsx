@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '@/components/Card';
 import { PressableScale } from '@/components/PressableScale';
 import { SectionLabel } from '@/components/SectionLabel';
+import { useAppLanguage } from '@/lib/i18n';
 import { BADGES, displayStreak, levelProgress } from '@/lib/progress';
 import { todayKey, useOnboardingStore } from '@/lib/store';
 import {
@@ -38,6 +40,8 @@ const cascade = (index: number) =>
 /** Récompenses — streak, niveau/rang et grille de badges. */
 export default function RecompensesScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
+  const lang = useAppLanguage();
   const progress = useOnboardingStore((state) => state.progress);
   const streak = displayStreak(progress, todayKey());
   const level = levelProgress(progress.xp);
@@ -48,13 +52,13 @@ export default function RecompensesScreen() {
         <PressableScale
           onPress={() => router.back()}
           accessibilityRole="button"
-          accessibilityLabel="Retour"
+          accessibilityLabel={t('common.back')}
           hitSlop={12}
           style={styles.iconButton}
         >
           <Ionicons name="chevron-back" size={20} color={color.textMuted} />
         </PressableScale>
-        <Text style={styles.title}>Récompenses</Text>
+        <Text style={styles.title}>{t('progress.rewardsTitle')}</Text>
         <View style={styles.iconButton} />
       </View>
 
@@ -75,18 +79,18 @@ export default function RecompensesScreen() {
                 />
                 <Text style={styles.streakValue}>{streak}</Text>
               </View>
-              <Text style={styles.statLabel}>Streak</Text>
+              <Text style={styles.statLabel}>{t('progress.streakLabel')}</Text>
             </View>
             <View style={styles.streakStat}>
               <Text style={styles.streakValue}>{progress.bestStreak}</Text>
-              <Text style={styles.statLabel}>Record</Text>
+              <Text style={styles.statLabel}>{t('progress.recordLabel')}</Text>
             </View>
             <View style={styles.streakStat}>
               <View style={styles.streakRow}>
                 <Ionicons name="snow-outline" size={20} color={color.textSecond} />
                 <Text style={styles.streakValue}>{progress.freezes}</Text>
               </View>
-              <Text style={styles.statLabel}>Jokers</Text>
+              <Text style={styles.statLabel}>{t('progress.freezesLabel')}</Text>
             </View>
           </Card>
         </Animated.View>
@@ -95,11 +99,17 @@ export default function RecompensesScreen() {
         <Animated.View entering={cascade(1)}>
           <Card style={styles.levelCard}>
             <View style={styles.levelInfo}>
-              <SectionLabel>Niveau</SectionLabel>
-              <Text style={styles.levelValue}>Niv. {level.level}</Text>
-              <Text style={styles.rank}>{level.rank}</Text>
+              <SectionLabel>{t('program.levelLabel')}</SectionLabel>
+              <Text style={styles.levelValue}>
+                {t('progress.levelShort', { level: level.level })}
+              </Text>
+              <Text style={styles.rank}>{level.rank[lang]}</Text>
               <Text style={styles.levelMeta}>
-                {level.current}/{level.needed} XP vers le niveau {level.level + 1}
+                {t('progress.xpToNext', {
+                  current: level.current,
+                  needed: level.needed,
+                  next: level.level + 1,
+                })}
               </Text>
             </View>
             <View style={styles.levelBarRail}>
@@ -112,7 +122,7 @@ export default function RecompensesScreen() {
 
         {/* Grille de badges : débloqués en lime, verrouillés en gris. */}
         <Animated.View entering={cascade(2)}>
-          <SectionLabel style={styles.badgesLabel}>Badges</SectionLabel>
+          <SectionLabel style={styles.badgesLabel}>{t('progress.badges')}</SectionLabel>
           <View style={styles.badgeGrid}>
             {BADGES.map((badge) => {
               const unlocked = progress.badges.includes(badge.id);
@@ -129,18 +139,16 @@ export default function RecompensesScreen() {
                   <Text
                     style={[styles.badgeTitle, !unlocked && styles.badgeTitleLocked]}
                   >
-                    {badge.titre}
+                    {badge.titre[lang]}
                   </Text>
-                  <Text style={styles.badgeDescription}>{badge.description}</Text>
+                  <Text style={styles.badgeDescription}>{badge.description[lang]}</Text>
                 </Card>
               );
             })}
           </View>
         </Animated.View>
 
-        <Text style={styles.footnote}>
-          Les badges récompensent ta régularité et ta posture.
-        </Text>
+        <Text style={styles.footnote}>{t('progress.badgesFootnote')}</Text>
       </ScrollView>
     </SafeAreaView>
   );

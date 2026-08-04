@@ -9,6 +9,7 @@ import type {
   NutritionTargets,
 } from './nutrition';
 import { HABIT_XP } from './habits';
+import type { AppLanguage } from './i18n';
 import { MAX_GLASSES_PER_DAY } from './hydration';
 import { advanceJourney, INITIAL_JOURNEY, JOURNEY_DAY_COUNT, type JourneyState } from './journey';
 import { getSession } from './program';
@@ -127,6 +128,8 @@ type OnboardingState = {
   referralCode?: string;
   /** Passe à true à la fin du flow (reveal/paywall) — débloque les tabs. */
   onboardingDone: boolean;
+  /** Langue choisie dans Profil — null = suivre la langue de l'appareil. */
+  language: AppLanguage | null;
   /** Séances complétées, par clé du jour : { "2026-07-28": ["redressement-base"] }. */
   completedSessions: Record<string, string[]>;
   /** Réponses en cours du setup nutrition (sous-onboarding). */
@@ -162,6 +165,7 @@ type OnboardingState = {
   setHasHydrated: (value: boolean) => void;
   setAnswer: <K extends keyof QuizAnswers>(key: K, value: QuizAnswers[K]) => void;
   setReferralCode: (code: string | undefined) => void;
+  setLanguage: (language: AppLanguage) => void;
   completeOnboarding: () => void;
   completeSession: (sessionId: string) => void;
   setNutritionDraft: (patch: Partial<NutritionProfile>) => void;
@@ -191,6 +195,7 @@ type PersistedState = Pick<
   | 'answers'
   | 'referralCode'
   | 'onboardingDone'
+  | 'language'
   | 'completedSessions'
   | 'nutritionProfile'
   | 'nutritionTargets'
@@ -203,7 +208,7 @@ type PersistedState = Pick<
   | 'water'
 >;
 
-const PERSIST_VERSION = 5;
+const PERSIST_VERSION = 6;
 
 /**
  * Storage no-op pour le pré-rendu statique web (Node, pas de window).
@@ -219,6 +224,7 @@ const initialState = {
   hasHydrated: false,
   answers: {},
   onboardingDone: false,
+  language: null as AppLanguage | null,
   completedSessions: {},
   nutritionDraft: {},
   meals: {},
@@ -240,6 +246,7 @@ export const useOnboardingStore = create<OnboardingState>()(
       setAnswer: (key, value) =>
         set((state) => ({ answers: { ...state.answers, [key]: value } })),
       setReferralCode: (code) => set({ referralCode: code }),
+      setLanguage: (language) => set({ language }),
       completeOnboarding: () => set({ onboardingDone: true }),
       completeSession: (sessionId) =>
         set((state) => {
@@ -357,6 +364,7 @@ export const useOnboardingStore = create<OnboardingState>()(
         answers: state.answers,
         referralCode: state.referralCode,
         onboardingDone: state.onboardingDone,
+        language: state.language,
         completedSessions: state.completedSessions,
         nutritionProfile: state.nutritionProfile,
         nutritionTargets: state.nutritionTargets,
@@ -401,6 +409,8 @@ export const useOnboardingStore = create<OnboardingState>()(
         if (!state.habitsRewarded) state.habitsRewarded = {};
         // v4 → v5 : compteur d'hydratation.
         if (!state.water) state.water = {};
+        // v5 → v6 : langue (null = suivre l'appareil).
+        if (state.language === undefined) state.language = null;
         return state;
       },
       onRehydrateStorage: () => () => {

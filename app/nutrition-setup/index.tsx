@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -21,6 +22,7 @@ const MAX_KG = 250;
 /** Setup nutrition 1/4 — poids. */
 export default function WeightScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const draft = useOnboardingStore((state) => state.nutritionDraft);
   const setNutritionDraft = useOnboardingStore((state) => state.setNutritionDraft);
   const [raw, setRaw] = useState(draft.poidsKg ? String(draft.poidsKg) : '');
@@ -41,7 +43,7 @@ export default function WeightScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <OnboardingProgress step={1} total={4} />
-        <Text style={styles.title}>Ton poids ?</Text>
+        <Text style={styles.title}>{t('nutrition.setupWeightTitle')}</Text>
 
         <View style={styles.inputRow}>
           <TextInput
@@ -59,7 +61,11 @@ export default function WeightScreen() {
         </View>
 
         <View style={styles.footer}>
-          <PrimaryButton label="Continuer" disabled={!isValid} onPress={handleContinue} />
+          <PrimaryButton
+            label={t('common.continue')}
+            disabled={!isValid}
+            onPress={handleContinue}
+          />
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

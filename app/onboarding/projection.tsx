@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { ProjectionStage } from '@/components/ProjectionStage';
+import { formatDecimal, useAppLanguage, type AppLanguage } from '@/lib/i18n';
 import { computePostureResult } from '@/lib/posture';
 import { useOnboardingStore } from '@/lib/store';
 import { color, space, type } from '@/theme/tokens';
@@ -14,7 +16,7 @@ const DELAY_MS = 500;
 const GROW_MS = 1600;
 const TICK_MS = 30;
 
-const formatCm = (value: number) => `${value.toFixed(1).replace('.', ',')} cm`;
+const formatCm = (value: number, lang: AppLanguage) => `${formatDecimal(value, 1, lang)} cm`;
 const easeOut = (t: number) => 1 - (1 - t) * (1 - t);
 
 /**
@@ -23,6 +25,8 @@ const easeOut = (t: number) => 1 - (1 - t) * (1 - t);
  */
 export default function ProjectionScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
+  const lang = useAppLanguage();
   const reducedMotion = useReducedMotion();
   const answers = useOnboardingStore((state) => state.answers);
   const result = computePostureResult(answers);
@@ -45,7 +49,7 @@ export default function ProjectionScreen() {
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <View style={styles.body}>
         <Text style={styles.score}>{result.postureScore}</Text>
-        <Text style={styles.scoreLabel}>Score de stature</Text>
+        <Text style={styles.scoreLabel}>{t('common.statureScore')}</Text>
 
         <ProjectionStage
           heightCm={heightCm}
@@ -54,16 +58,19 @@ export default function ProjectionScreen() {
           ratio={ratio}
         />
 
-        <Text style={styles.copy}>Voilà toi, à ta pleine hauteur.</Text>
+        <Text style={styles.copy}>{t('onboarding.projectionTitle')}</Text>
         <Text style={styles.sub}>
-          Tu peux reprendre jusqu'à{' '}
-          <Text style={styles.subStrong}>{formatCm(result.heightLossCm)}</Text> de
-          présence en te tenant à ta pleine hauteur.
+          {t('onboarding.projectionSubBefore')}
+          <Text style={styles.subStrong}>{formatCm(result.heightLossCm, lang)}</Text>
+          {t('onboarding.projectionSubAfter')}
         </Text>
       </View>
 
       <View style={styles.footer}>
-        <PrimaryButton label="Continuer" onPress={() => router.push('/onboarding/email')} />
+        <PrimaryButton
+          label={t('common.continue')}
+          onPress={() => router.push('/onboarding/email')}
+        />
       </View>
     </SafeAreaView>
   );

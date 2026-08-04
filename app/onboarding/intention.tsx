@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,9 +10,9 @@ import { useOnboardingStore, type Intention } from '@/lib/store';
 import { color, duration, space, staggerDelay, type } from '@/theme/tokens';
 
 const CHOICES: { value: Intention; emoji: string; titre: string; sous: string }[] = [
-  { value: 'posture', emoji: '🧍', titre: 'Ma posture', sous: 'Me tenir droit, paraître plus grand' },
-  { value: 'nutrition', emoji: '🍽️', titre: 'Ma nutrition', sous: 'Prise de masse ou mieux manger' },
-  { value: 'both', emoji: '⚡', titre: 'Les deux', sous: 'Posture + nutrition, le combo complet' },
+  { value: 'posture', emoji: '🧍', titre: 'intentionPosture', sous: 'intentionPostureSub' },
+  { value: 'nutrition', emoji: '🍽️', titre: 'intentionNutrition', sous: 'intentionNutritionSub' },
+  { value: 'both', emoji: '⚡', titre: 'intentionBoth', sous: 'intentionBothSub' },
 ];
 
 const cascade = (index: number) =>
@@ -22,6 +23,7 @@ const cascade = (index: number) =>
 /** Écran 2 — l'intention : branche tout le reste du questionnaire. */
 export default function IntentionScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const setAnswer = useOnboardingStore((state) => state.setAnswer);
 
   const choose = (value: Intention) => {
@@ -31,7 +33,7 @@ export default function IntentionScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <Text style={styles.title}>Qu'est-ce qui t'amène ?</Text>
+      <Text style={styles.title}>{t('onboarding.intentionTitle')}</Text>
 
       <View style={styles.cards}>
         {CHOICES.map((choice, index) => (
@@ -40,13 +42,13 @@ export default function IntentionScreen() {
               onPress={() => choose(choice.value)}
               haptic="selection"
               accessibilityRole="button"
-              accessibilityLabel={choice.titre}
+              accessibilityLabel={t(`onboarding.${choice.titre}`)}
             >
               <Card style={styles.card}>
                 <Text style={styles.emoji}>{choice.emoji}</Text>
                 <View style={styles.cardText}>
-                  <Text style={styles.cardTitle}>{choice.titre}</Text>
-                  <Text style={styles.cardSub}>{choice.sous}</Text>
+                  <Text style={styles.cardTitle}>{t(`onboarding.${choice.titre}`)}</Text>
+                  <Text style={styles.cardSub}>{t(`onboarding.${choice.sous}`)}</Text>
                 </View>
               </Card>
             </PressableScale>

@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,15 +12,16 @@ import { questionCount, questionStep, routeAfterTensions } from '@/lib/onboardin
 import { useOnboardingStore, type TensionZone } from '@/lib/store';
 import { color, duration, space, type } from '@/theme/tokens';
 
-const ZONES: { value: TensionZone; label: string }[] = [
-  { value: 'nuque', label: 'Nuque' },
-  { value: 'haut-dos', label: 'Haut du dos' },
-  { value: 'bas-dos', label: 'Bas du dos' },
+const ZONES: { value: TensionZone; labelKey: string }[] = [
+  { value: 'nuque', labelKey: 'onboarding.tensionNeck' },
+  { value: 'haut-dos', labelKey: 'onboarding.tensionUpperBack' },
+  { value: 'bas-dos', labelKey: 'onboarding.tensionLowerBack' },
 ];
 
 /** Posture 4/6 — zones de tension (multi-choix, « aucune » exclusif). */
 export default function TensionsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const intention = useOnboardingStore((state) => state.answers.intention);
   const stored = useOnboardingStore((state) => state.answers.tensions);
   const setAnswer = useOnboardingStore((state) => state.setAnswer);
@@ -47,8 +49,8 @@ export default function TensionsScreen() {
         total={questionCount(intention)}
       />
 
-      <Text style={styles.title}>Où tu ressens des tensions ?</Text>
-      <Text style={styles.subtitle}>Plusieurs choix possibles.</Text>
+      <Text style={styles.title}>{t('onboarding.tensionsTitle')}</Text>
+      <Text style={styles.subtitle}>{t('onboarding.tensionsSubtitle')}</Text>
 
       <Animated.View
         style={styles.options}
@@ -57,17 +59,21 @@ export default function TensionsScreen() {
         {ZONES.map((zone) => (
           <QuizOption
             key={zone.value}
-            label={zone.label}
+            label={t(zone.labelKey)}
             selected={selected?.includes(zone.value) ?? false}
             onPress={() => toggleZone(zone.value)}
           />
         ))}
-        <QuizOption label="Aucune" selected={none} onPress={() => setSelected([])} />
+        <QuizOption
+          label={t('onboarding.tensionNone')}
+          selected={none}
+          onPress={() => setSelected([])}
+        />
       </Animated.View>
 
       <View style={styles.footer}>
         <PrimaryButton
-          label="Continuer"
+          label={t('common.continue')}
           disabled={selected === undefined}
           onPress={handleContinue}
         />

@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -17,6 +18,7 @@ const cascade = (index: number) =>
 /** Écran 1 — splash / hook : logo, promesse honnête, COMMENCER. */
 export default function SplashScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
@@ -28,11 +30,14 @@ export default function SplashScreen() {
           <Mascot state="neutral" size={MASCOT_SIZE} />
         </Animated.View>
         <Animated.Text entering={cascade(2)} style={styles.hook}>
-          Découvre ta vraie taille et reprends ta présence.
+          {t('onboarding.splashHook')}
         </Animated.Text>
       </View>
       <View style={styles.footer}>
-        <PrimaryButton label="Commencer" onPress={() => router.push('/onboarding/intention')} />
+        <PrimaryButton
+          label={t('common.start')}
+          onPress={() => router.push('/onboarding/intention')}
+        />
       </View>
     </SafeAreaView>
   );

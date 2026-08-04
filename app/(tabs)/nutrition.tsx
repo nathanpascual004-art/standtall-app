@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Platform,
   ScrollView,
@@ -27,6 +28,7 @@ import {
   type ScanItem,
 } from '@/lib/foodScan';
 import { formatWater, waterRatio } from '@/lib/hydration';
+import { formatLongDate, useAppLanguage } from '@/lib/i18n';
 import { GOAL_TITLES } from '@/lib/meal-ideas';
 import { tipOfDay } from '@/lib/nutrition-tips';
 import { useOnboardingStore, todayKey, type NutriIntent, type SavedMeal } from '@/lib/store';
@@ -41,16 +43,6 @@ import {
   webNoOutline,
 } from '@/theme/tokens';
 
-const DAYS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
-const MONTHS = [
-  'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
-  'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre',
-];
-
-const formatToday = () => {
-  const now = new Date();
-  return `${DAYS[now.getDay()]} ${now.getDate()} ${MONTHS[now.getMonth()]}`;
-};
 
 /** Layout local (pas des tokens de design) : vignette et image du scan. */
 const SCAN_IMAGE_HEIGHT = 120;
@@ -94,6 +86,14 @@ const mealSlot = (id: string): string => {
 };
 
 const MEAL_SLOTS = ['Petit-déj', 'Déjeuner', 'Dîner', 'Aujourd\'hui'];
+
+/** Libellés localisés des créneaux (les valeurs internes restent stables). */
+const SLOT_LABEL_KEYS: Record<string, string> = {
+  'Petit-déj': 'nutrition.slotBreakfast',
+  Déjeuner: 'nutrition.slotLunch',
+  Dîner: 'nutrition.slotDinner',
+  "Aujourd'hui": 'nutrition.slotToday',
+};
 
 /** Apparition en cascade des blocs principaux (sobre, respecte reduce motion). */
 const cascade = (index: number) =>
@@ -141,12 +141,21 @@ const scaleDraftItem = (item: DraftItem): ScanItem => {
   };
 };
 
-const macroLine = (kcal: number, protein: number, carb: number, fat: number) =>
-  `${Math.round(kcal)} kcal · P ${Math.round(protein)} · G ${Math.round(carb)} · L ${Math.round(fat)}`;
+
 
 /** Onglet Nutrition — cibles du jour, scan de repas, journal. */
 export default function NutritionScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
+  const lang = useAppLanguage();
+
+  const macroLine = (kcal: number, protein: number, carb: number, fat: number) =>
+    t('nutrition.macroLine', {
+      kcal: Math.round(kcal),
+      p: Math.round(protein),
+      c: Math.round(carb),
+      f: Math.round(fat),
+    });
   const profile = useOnboardingStore((state) => state.nutritionProfile);
   const targets = useOnboardingStore((state) => state.nutritionTargets);
   const meals = useOnboardingStore((state) => state.meals);
@@ -302,7 +311,7 @@ export default function NutritionScreen() {
       asset.base64 ??
       (asset.uri.startsWith('data:') ? asset.uri.split(',')[1] : undefined);
     if (!base64) {
-      setError("Impossible de lire l'image. Réessaie.");
+      setError(t('nutrition.imageReadError'));
       return;
     }
 
@@ -316,7 +325,7 @@ export default function NutritionScreen() {
     setScanning(false);
 
     if (!scan) {
-      setError('Analyse indisponible pour le moment. Réessaie dans un instant.');
+      setError(t('nutrition.scanUnavailable'));
       return;
     }
     openDraft(scan);
@@ -331,7 +340,7 @@ export default function NutritionScreen() {
     setScanning(false);
 
     if (!scan) {
-      setError('Analyse indisponible pour le moment. Réessaie dans un instant.');
+      setError(t('nutrition.scanUnavailable'));
       return;
     }
     openDraft(scan);
@@ -368,20 +377,17 @@ export default function NutritionScreen() {
     return (
       <SafeAreaView style={styles.screen} edges={['top']}>
         <View style={styles.introContent}>
-          <Text style={styles.title}>Nutrition</Text>
-          <Text style={styles.date}>{formatToday()}</Text>
+          <Text style={styles.title}>{t('common.tabNutrition')}</Text>
+          <Text style={styles.date}>{formatLongDate(lang)}</Text>
           <Animated.View entering={cascade(0)}>
             <Card style={styles.introCard}>
               <View style={styles.introMascot}>
                 <Mascot state="encourage" size={MASCOT_SIZE} />
               </View>
-              <Text style={styles.introTitle}>Configure ton suivi</Text>
-              <Text style={styles.introText}>
-                Quelques questions pour calculer tes besoins en calories et en
-                macros, adaptés à ton objectif.
-              </Text>
+              <Text style={styles.introTitle}>{t('nutrition.introTitle')}</Text>
+              <Text style={styles.introText}>{t('nutrition.introText')}</Text>
               <PrimaryButton
-                label="Configurer"
+                label={t('nutrition.introCta')}
                 onPress={() => router.push('/nutrition-setup')}
               />
             </Card>
@@ -399,31 +405,31 @@ export default function NutritionScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerRow}>
-          <Text style={styles.title}>Nutrition</Text>
+          <Text style={styles.title}>{t('common.tabNutrition')}</Text>
           <PressableScale
             onPress={() => router.push('/(tabs)/profil')}
             accessibilityRole="button"
-            accessibilityLabel="Réglages"
+            accessibilityLabel={t('program.settingsA11y')}
             hitSlop={8}
             style={styles.iconButton}
           >
             <Ionicons name="options-outline" size={20} color={color.textMuted} />
           </PressableScale>
         </View>
-        <Text style={styles.date}>{formatToday()}</Text>
+        <Text style={styles.date}>{formatLongDate(lang)}</Text>
 
         {/* Aperçu du jour : anneau calories restantes + macros — vraies données. */}
         <Animated.View entering={cascade(0)}>
           <Card style={styles.heroCard}>
-            <SectionLabel>Aperçu du jour</SectionLabel>
+            <SectionLabel>{t('nutrition.todayOverview')}</SectionLabel>
             <View style={styles.heroRow}>
               <CaloriesRing consumed={consumed.calories} target={targets.calories} />
               <View style={styles.macroColumn}>
                 {(
                   [
-                    ['Protéines', consumed.proteinesG, targets.proteinesG, color.accent],
-                    ['Glucides', consumed.glucidesG, targets.glucidesG, color.macro2],
-                    ['Lipides', consumed.lipidesG, targets.lipidesG, color.macro3],
+                    [t('nutrition.protein'), consumed.proteinesG, targets.proteinesG, color.accent],
+                    [t('nutrition.carbs'), consumed.glucidesG, targets.glucidesG, color.macro2],
+                    [t('nutrition.fats'), consumed.lipidesG, targets.lipidesG, color.macro3],
                   ] as const
                 ).map(([label, value, target, barColor]) => (
                   <View key={label} style={styles.macroBlock}>
@@ -448,9 +454,7 @@ export default function NutritionScreen() {
                 ))}
               </View>
             </View>
-            <Text style={styles.heroHint}>
-              De quoi soutenir ta récupération et ton muscle aujourd'hui.
-            </Text>
+            <Text style={styles.heroHint}>{t('nutrition.heroHint')}</Text>
           </Card>
         </Animated.View>
 
@@ -461,8 +465,8 @@ export default function NutritionScreen() {
               <Ionicons name="bulb-outline" size={17} color={color.accent} />
             </View>
             <View style={styles.tipText}>
-              <SectionLabel>Conseil du jour</SectionLabel>
-              <Text style={styles.tipBody}>{tip}</Text>
+              <SectionLabel>{t('nutrition.tipOfDay')}</SectionLabel>
+              <Text style={styles.tipBody}>{tip[lang]}</Text>
             </View>
             <Ionicons name="chevron-forward" size={16} color={color.textMuted} />
           </Card>
@@ -473,31 +477,31 @@ export default function NutritionScreen() {
           <PressableScale
             onPress={() => router.push('/idees-repas')}
             accessibilityRole="button"
-            accessibilityLabel="Idées de repas"
+            accessibilityLabel={t('nutrition.mealIdeasA11y')}
           >
             <Card style={styles.ideasCard}>
               <View style={styles.tipIcon}>
                 <Ionicons name="restaurant-outline" size={17} color={color.accent} />
               </View>
-              <Text style={styles.ideasLabel}>{GOAL_TITLES[ideasGoal]} →</Text>
+              <Text style={styles.ideasLabel}>{GOAL_TITLES[ideasGoal][lang]} →</Text>
             </Card>
           </PressableScale>
         </Animated.View>
 
         {/* Suivi rapide : hydratation (tap = +1 verre), repas, collations. */}
         <Animated.View entering={cascade(2)}>
-          <SectionLabel style={styles.sectionGap}>Suivi rapide</SectionLabel>
+          <SectionLabel style={styles.sectionGap}>{t('nutrition.quickTracking')}</SectionLabel>
           <View style={styles.quickRow}>
             <PressableScale
               onPress={() => addWater(1)}
               accessibilityRole="button"
-              accessibilityLabel="Ajouter un verre"
+              accessibilityLabel={t('nutrition.addGlassA11y')}
               style={styles.quickTileWrap}
             >
               <Card style={styles.quickTile}>
                 <Ionicons name="water-outline" size={17} color={color.accent} />
-                <Text style={styles.quickLabel}>Hydratation</Text>
-                <Text style={styles.quickValue}>{formatWater(glasses)}</Text>
+                <Text style={styles.quickLabel}>{t('nutrition.hydration')}</Text>
+                <Text style={styles.quickValue}>{formatWater(glasses, lang)}</Text>
                 <View style={styles.quickRail}>
                   <View
                     style={[styles.quickFill, { width: `${Math.round(waterRatio(glasses) * 100)}%` }]}
@@ -507,7 +511,7 @@ export default function NutritionScreen() {
             </PressableScale>
             <Card style={[styles.quickTile, styles.quickTileWrap]}>
               <Ionicons name="restaurant-outline" size={17} color={color.accent} />
-              <Text style={styles.quickLabel}>Repas</Text>
+              <Text style={styles.quickLabel}>{t('nutrition.mealsTile')}</Text>
               <Text style={styles.quickValue}>
                 {mealsCount} / {mealsTarget}
               </Text>
@@ -522,7 +526,7 @@ export default function NutritionScreen() {
             </Card>
             <Card style={[styles.quickTile, styles.quickTileWrap]}>
               <Ionicons name="cafe-outline" size={17} color={color.accent} />
-              <Text style={styles.quickLabel}>Collations</Text>
+              <Text style={styles.quickLabel}>{t('nutrition.snacksTile')}</Text>
               <Text style={styles.quickValue}>{snacksCount} / 2</Text>
               <View style={styles.quickRail}>
                 <View
@@ -535,18 +539,18 @@ export default function NutritionScreen() {
 
         {/* Ajouter un repas — le scan CIQUAL reste le moteur derrière. */}
         <Animated.View entering={cascade(3)}>
-          <SectionLabel style={styles.sectionGap}>Ajouter un repas</SectionLabel>
+          <SectionLabel style={styles.sectionGap}>{t('nutrition.addMeal')}</SectionLabel>
           <View style={styles.addList}>
             <PressableScale
               onPress={handleScan}
               accessibilityRole="button"
-              accessibilityLabel="Photographier un repas"
+              accessibilityLabel={t('nutrition.photographMeal')}
               disabled={scanning}
             >
               <Card style={styles.addRow}>
                 <Ionicons name="camera-outline" size={19} color={color.accent} />
                 <Text style={styles.addLabel}>
-                  {scanning ? 'Analyse en cours…' : 'Photographier un repas'}
+                  {scanning ? t('nutrition.scanning') : t('nutrition.photographMeal')}
                 </Text>
                 <Ionicons name="chevron-forward" size={16} color={color.textMuted} />
               </Card>
@@ -555,11 +559,11 @@ export default function NutritionScreen() {
             <PressableScale
               onPress={() => setBarcodeOpen((open) => !open)}
               accessibilityRole="button"
-              accessibilityLabel="Scanner un code-barres"
+              accessibilityLabel={t('nutrition.scanBarcode')}
             >
               <Card style={styles.addRow}>
                 <Ionicons name="barcode-outline" size={19} color={color.accent} />
-                <Text style={styles.addLabel}>Scanner un code-barres</Text>
+                <Text style={styles.addLabel}>{t('nutrition.scanBarcode')}</Text>
                 <Ionicons
                   name={barcodeOpen ? 'chevron-down' : 'chevron-forward'}
                   size={16}
@@ -577,10 +581,10 @@ export default function NutritionScreen() {
                   placeholder="3017624010701"
                   placeholderTextColor={color.textMuted}
                   selectionColor={color.accent}
-                  accessibilityLabel="Code-barres EAN"
+                  accessibilityLabel={t('nutrition.barcodeA11y')}
                 />
                 <PrimaryButton
-                  label="Rechercher"
+                  label={t('nutrition.search')}
                   disabled={!barcode.trim() || scanning}
                   onPress={handleBarcodeSearch}
                   style={styles.barcodeSearch}
@@ -591,11 +595,11 @@ export default function NutritionScreen() {
             <PressableScale
               onPress={() => setDescOpen((open) => !open)}
               accessibilityRole="button"
-              accessibilityLabel="Décrire mon repas"
+              accessibilityLabel={t('nutrition.describeMeal')}
             >
               <Card style={styles.addRow}>
                 <Ionicons name="create-outline" size={19} color={color.accent} />
-                <Text style={styles.addLabel}>Décrire mon repas</Text>
+                <Text style={styles.addLabel}>{t('nutrition.describeMeal')}</Text>
                 <Ionicons
                   name={descOpen ? 'chevron-down' : 'chevron-forward'}
                   size={16}
@@ -609,25 +613,23 @@ export default function NutritionScreen() {
                   style={[styles.hintInput, webNoOutline]}
                   value={userHint}
                   onChangeText={setUserHint}
-                  placeholder="ex. poulet riz ~300 g"
+                  placeholder={t('nutrition.describePlaceholder')}
                   placeholderTextColor={color.textMuted}
                   selectionColor={color.accent}
-                  accessibilityLabel="Aide l'IA"
+                  accessibilityLabel={t('nutrition.hintA11y')}
                 />
-                <Text style={styles.descHint}>
-                  Ta description guide l'analyse — photographie ensuite ton repas.
-                </Text>
+                <Text style={styles.descHint}>{t('nutrition.describeHint')}</Text>
               </View>
             ) : null}
 
             <PressableScale
               onPress={() => setManualOpen((open) => !open)}
               accessibilityRole="button"
-              accessibilityLabel="Ajouter manuellement"
+              accessibilityLabel={t('nutrition.addManually')}
             >
               <Card style={styles.addRow}>
                 <Ionicons name="add-circle-outline" size={19} color={color.accent} />
-                <Text style={styles.addLabel}>Ajouter manuellement</Text>
+                <Text style={styles.addLabel}>{t('nutrition.addManually')}</Text>
                 <Ionicons
                   name={manualOpen ? 'chevron-down' : 'chevron-forward'}
                   size={16}
@@ -641,18 +643,18 @@ export default function NutritionScreen() {
                   style={[styles.hintInput, webNoOutline]}
                   value={manual.nom}
                   onChangeText={(nom) => setManual({ ...manual, nom })}
-                  placeholder="Nom du repas"
+                  placeholder={t('nutrition.mealNamePlaceholder')}
                   placeholderTextColor={color.textMuted}
                   selectionColor={color.accent}
-                  accessibilityLabel="Nom du repas manuel"
+                  accessibilityLabel={t('nutrition.manualNameA11y')}
                 />
                 <View style={styles.manualRow}>
                   {(
                     [
                       ['kcal', 'kcal'],
-                      ['p', 'P (g)'],
-                      ['g', 'G (g)'],
-                      ['l', 'L (g)'],
+                      ['p', t('nutrition.manualP')],
+                      ['g', t('nutrition.manualC')],
+                      ['l', t('nutrition.manualF')],
                     ] as const
                   ).map(([key, label]) => (
                     <TextInput
@@ -666,12 +668,12 @@ export default function NutritionScreen() {
                       placeholder={label}
                       placeholderTextColor={color.textMuted}
                       selectionColor={color.accent}
-                      accessibilityLabel={`Manuel ${label}`}
+                      accessibilityLabel={t('nutrition.manualFieldA11y', { label })}
                     />
                   ))}
                 </View>
                 <PrimaryButton
-                  label="Ajouter au journal"
+                  label={t('nutrition.addToJournal')}
                   disabled={!manual.nom.trim() || toInt(manual.kcal) <= 0}
                   onPress={handleManualAdd}
                 />
@@ -693,12 +695,12 @@ export default function NutritionScreen() {
                 icon="restaurant-outline"
                 borderRadius={radius.tile}
               />
-              <SectionLabel>Résultat du scan — estimation</SectionLabel>
+              <SectionLabel>{t('nutrition.scanResult')}</SectionLabel>
               <TextInput
                 style={[styles.nameInput, webNoOutline]}
                 value={draft.nom}
                 onChangeText={(nom) => setDraft({ ...draft, nom })}
-                placeholder="Nom du repas"
+                placeholder={t('nutrition.mealNamePlaceholder')}
                 placeholderTextColor={color.textMuted}
                 selectionColor={color.accent}
               />
@@ -723,14 +725,14 @@ export default function NutritionScreen() {
                               })
                             }
                             keyboardType="number-pad"
-                            accessibilityLabel={`Grammes de ${item.base.name}`}
+                            accessibilityLabel={t('nutrition.gramsOfA11y', { name: item.base.name })}
                           />
                           <Text style={styles.gramsSuffix}>g</Text>
                         </View>
                         <PressableScale
                           onPress={() => removeDraftItem(index)}
                           accessibilityRole="button"
-                          accessibilityLabel={`Retirer ${item.base.name}`}
+                          accessibilityLabel={t('nutrition.removeItemA11y', { name: item.base.name })}
                           hitSlop={8}
                         >
                           <Ionicons
@@ -746,7 +748,7 @@ export default function NutritionScreen() {
                       <Text style={styles.itemMatch}>
                         {item.base.matchedFood
                           ? `≈ ${item.base.matchedFood}`
-                          : 'estimation modèle'}
+                          : t('nutrition.modelEstimate')}
                       </Text>
                     </View>
                   );
@@ -755,16 +757,19 @@ export default function NutritionScreen() {
               <View style={styles.totalRow}>
                 <Text style={styles.totalKcal}>{draftTotals.kcal}</Text>
                 <Text style={styles.totalMacros}>
-                  kcal · P {Math.round(draftTotals.protein)} · G{' '}
-                  {Math.round(draftTotals.carb)} · L {Math.round(draftTotals.fat)}
+                  {t('nutrition.totalMacros', {
+                    p: Math.round(draftTotals.protein),
+                    c: Math.round(draftTotals.carb),
+                    f: Math.round(draftTotals.fat),
+                  })}
                 </Text>
               </View>
               <Text style={styles.confidence}>
-                Confiance de l'estimation : {Math.round(draft.confiance * 100)} %
+                {t('nutrition.confidence', { pct: Math.round(draft.confiance * 100) })}
               </Text>
-              <PrimaryButton label="Ajouter" onPress={handleAddMeal} />
+              <PrimaryButton label={t('common.add')} onPress={handleAddMeal} />
               <PrimaryButton
-                label="Annuler"
+                label={t('common.cancel')}
                 variant="secondary"
                 onPress={() => setDraft(null)}
               />
@@ -774,7 +779,7 @@ export default function NutritionScreen() {
 
         {reuseMeals.length > 0 ? (
           <Animated.View entering={cascade(2)}>
-            <SectionLabel style={styles.reuseLabel}>Réutiliser</SectionLabel>
+            <SectionLabel style={styles.reuseLabel}>{t('nutrition.reuse')}</SectionLabel>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -786,7 +791,7 @@ export default function NutritionScreen() {
                   key={meal.nom}
                   onPress={() => addMeal({ ...meal })}
                   accessibilityRole="button"
-                  accessibilityLabel={`Réutiliser ${meal.nom}`}
+                  accessibilityLabel={t('nutrition.reuseA11y', { name: meal.nom })}
                   style={styles.chip}
                 >
                   {favorite ? (
@@ -802,9 +807,9 @@ export default function NutritionScreen() {
         ) : null}
 
         <Animated.View entering={cascade(2)}>
-          <SectionLabel style={styles.journalLabel}>Repas du jour</SectionLabel>
+          <SectionLabel style={styles.journalLabel}>{t('nutrition.todayMeals')}</SectionLabel>
           {todayMeals.length === 0 ? (
-            <Text style={styles.empty}>Aucun repas enregistré aujourd'hui.</Text>
+            <Text style={styles.empty}>{t('nutrition.emptyJournal')}</Text>
           ) : (
             <View style={styles.mealList}>
               {MEAL_SLOTS.map((slot) => {
@@ -812,7 +817,7 @@ export default function NutritionScreen() {
                 if (slotMeals.length === 0) return null;
                 return (
                   <View key={slot} style={styles.slotBlock}>
-                    <Text style={styles.slotLabel}>{slot}</Text>
+                    <Text style={styles.slotLabel}>{t(SLOT_LABEL_KEYS[slot])}</Text>
                     {slotMeals.map((meal) => {
                 const time = mealTime(meal.id);
                 const isFavorite = favoriteNames.has(meal.nom);
@@ -827,8 +832,12 @@ export default function NutritionScreen() {
                     <View style={styles.flex}>
                       <Text style={styles.mealName}>{meal.nom}</Text>
                       <Text style={styles.mealMacros}>
-                        {meal.calories} kcal · P {meal.proteinesG} g · G {meal.glucidesG} g ·
-                        L {meal.lipidesG} g
+                        {t('nutrition.mealMacros', {
+                          kcal: meal.calories,
+                          p: meal.proteinesG,
+                          c: meal.glucidesG,
+                          f: meal.lipidesG,
+                        })}
                       </Text>
                     </View>
                     {time ? <Text style={styles.mealTimeText}>{time}</Text> : null}
@@ -843,7 +852,7 @@ export default function NutritionScreen() {
                         })
                       }
                       accessibilityRole="button"
-                      accessibilityLabel={`Favori ${meal.nom}`}
+                      accessibilityLabel={t('nutrition.favoriteA11y', { name: meal.nom })}
                       hitSlop={8}
                     >
                       <Ionicons
@@ -855,7 +864,7 @@ export default function NutritionScreen() {
                     <PressableScale
                       onPress={() => removeMeal(meal.id)}
                       accessibilityRole="button"
-                      accessibilityLabel={`Supprimer ${meal.nom}`}
+                      accessibilityLabel={t('nutrition.deleteA11y', { name: meal.nom })}
                       hitSlop={8}
                     >
                       <Ionicons
@@ -875,9 +884,7 @@ export default function NutritionScreen() {
 
         </Animated.View>
 
-        <Text style={styles.disclaimer}>
-          Estimations basées sur l'image. Ajuste si besoin.
-        </Text>
+        <Text style={styles.disclaimer}>{t('nutrition.disclaimer')}</Text>
       </ScrollView>
     </SafeAreaView>
   );

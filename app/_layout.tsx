@@ -10,6 +10,7 @@ import { useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import i18n from '@/lib/i18n';
 import { initPurchases } from '@/lib/purchases';
 import { initNotifications, scheduleStreakReminder } from '@/lib/reminders';
 import { todayKey, useOnboardingStore } from '@/lib/store';
@@ -33,6 +34,14 @@ export default function RootLayout() {
     initPurchases();
     initNotifications();
   }, []);
+
+  // Choix de langue persisté (Profil) : réappliqué après hydratation.
+  // Sans choix (null), on reste sur la langue détectée de l'appareil.
+  useEffect(() => {
+    if (!hasHydrated) return;
+    const stored = useOnboardingStore.getState().language;
+    if (stored && stored !== i18n.language) void i18n.changeLanguage(stored);
+  }, [hasHydrated]);
 
   // À chaque ouverture, replanifie le rappel anti-rupture de série avec
   // l'état à jour (no-op sans permission, sans série, ou sur le web).

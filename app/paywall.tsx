@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -37,33 +38,33 @@ const FALLBACK_ANNUAL_PER_WEEK = '0,96 €';
 const FALLBACK_MONTHLY_PRICE = '9,99 €';
 const FALLBACK_WEEKLY_PRICE = '4,99 €';
 
-/** Copies adaptées à l'intention choisie à l'onboarding. */
-const COPY = {
+/** Copies adaptées à l'intention choisie à l'onboarding (clés i18n). */
+const COPY_KEYS = {
   posture: {
-    title: 'Débloque ta stature redressée',
-    subtitle: "Ton programme posture personnalisé t'attend",
+    title: 'paywall.titlePosture',
+    subtitle: 'paywall.subtitlePosture',
     benefits: [
-      'Ta stature redressée exacte',
-      "Ton programme d'étirements sur-mesure",
-      'Suivi de ta progression',
+      'paywall.benefitUprightHeight',
+      'paywall.benefitProgram',
+      'paywall.benefitTracking',
     ],
   },
   nutrition: {
-    title: 'Débloque ton plan nutrition',
-    subtitle: 'Ton objectif calorique et tes macros sur mesure',
+    title: 'paywall.titleNutrition',
+    subtitle: 'paywall.subtitleNutrition',
     benefits: [
-      'Ton objectif calorique personnalisé',
-      'Tes macros et le scan de repas',
-      'Suivi de ta progression',
+      'paywall.benefitCalorieGoal',
+      'paywall.benefitMacrosScan',
+      'paywall.benefitTracking',
     ],
   },
   both: {
-    title: 'Débloque ton plan complet',
-    subtitle: 'Stature redressée + nutrition sur mesure',
+    title: 'paywall.titleBoth',
+    subtitle: 'paywall.subtitleBoth',
     benefits: [
-      'Ta stature redressée exacte',
-      "Ton programme d'étirements sur-mesure",
-      'Ton plan nutrition + scan de repas',
+      'paywall.benefitUprightHeight',
+      'paywall.benefitProgram',
+      'paywall.benefitNutritionScan',
     ],
   },
 } as const;
@@ -118,9 +119,10 @@ function findPackage(
 
 /** Petit badge « 3 jours gratuits » (annuel et hebdo). */
 function TrialChip() {
+  const { t } = useTranslation();
   return (
     <View style={styles.trialChip}>
-      <Text style={styles.trialChipLabel}>3 jours gratuits</Text>
+      <Text style={styles.trialChipLabel}>{t('paywall.trialChip')}</Text>
     </View>
   );
 }
@@ -128,9 +130,10 @@ function TrialChip() {
 /** Paywall — prix, essai gratuit et résiliation visibles avant l'achat. */
 export default function PaywallScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const completeOnboarding = useOnboardingStore((state) => state.completeOnboarding);
   const intention = useOnboardingStore((state) => state.answers.intention);
-  const copy = COPY[intention ?? 'posture'];
+  const copy = COPY_KEYS[intention ?? 'posture'];
 
   const [offering, setOffering] = useState<PurchasesOffering | null>(null);
   const [selected, setSelected] = useState<Plan>('annual');
@@ -168,7 +171,7 @@ export default function PaywallScreen() {
       completeOnboarding();
       router.replace('/(tabs)');
     } else {
-      setError("L'achat n'a pas abouti. Réessaie dans un instant.");
+      setError(t('paywall.purchaseError'));
     }
   };
 
@@ -189,7 +192,7 @@ export default function PaywallScreen() {
       completeOnboarding();
       router.replace('/(tabs)');
     } else {
-      setError('Aucun achat à restaurer.');
+      setError(t('paywall.restoreError'));
     }
   };
 
@@ -199,7 +202,7 @@ export default function PaywallScreen() {
         <PressableScale
           onPress={() => router.back()}
           accessibilityRole="button"
-          accessibilityLabel="Fermer"
+          accessibilityLabel={t('common.close')}
           hitSlop={12}
           style={styles.close}
         >
@@ -214,8 +217,8 @@ export default function PaywallScreen() {
       >
         <Animated.View entering={cascade(0)} style={styles.titleRow}>
           <View style={styles.titleBlock}>
-            <Text style={styles.title}>{copy.title}</Text>
-            <Text style={styles.subtitle}>{copy.subtitle}</Text>
+            <Text style={styles.title}>{t(copy.title)}</Text>
+            <Text style={styles.subtitle}>{t(copy.subtitle)}</Text>
           </View>
           <Mascot state="encourage" size={MASCOT_SIZE} />
         </Animated.View>
@@ -224,7 +227,7 @@ export default function PaywallScreen() {
           {copy.benefits.map((benefit) => (
             <View key={benefit} style={styles.benefitRow}>
               <Ionicons name="checkmark-circle" size={20} color={color.accent} />
-              <Text style={styles.benefitText}>{benefit}</Text>
+              <Text style={styles.benefitText}>{t(benefit)}</Text>
             </View>
           ))}
         </Animated.View>
@@ -238,18 +241,23 @@ export default function PaywallScreen() {
             >
               <Card style={[styles.offer, selected === 'annual' && styles.offerSelected]}>
                 <View style={styles.badge}>
-                  <Text style={styles.badgeLabel}>Le plus choisi</Text>
+                  <Text style={styles.badgeLabel}>{t('paywall.mostPopular')}</Text>
                 </View>
                 <View style={styles.offerBody}>
                   <View style={styles.offerNameRow}>
-                    <Text style={styles.offerName}>Annuel</Text>
+                    <Text style={styles.offerName}>{t('paywall.annual')}</Text>
                     <TrialChip />
                   </View>
                   <Text style={styles.offerDetail}>
-                    puis <Text style={styles.priceInline}>{annualPrice}</Text>/an
+                    {t('paywall.then')}
+                    <Text style={styles.priceInline}>{annualPrice}</Text>
+                    {t('paywall.perYear')}
                   </Text>
                 </View>
-                <Text style={styles.offerPerWeek}>{annualPerWeek}/sem</Text>
+                <Text style={styles.offerPerWeek}>
+                  {annualPerWeek}
+                  {t('paywall.perWeekShort')}
+                </Text>
               </Card>
             </PressableScale>
           </Animated.View>
@@ -262,9 +270,10 @@ export default function PaywallScreen() {
             >
               <Card style={[styles.offer, selected === 'monthly' && styles.offerSelected]}>
                 <View style={styles.offerBody}>
-                  <Text style={styles.offerName}>Mensuel</Text>
+                  <Text style={styles.offerName}>{t('paywall.monthly')}</Text>
                   <Text style={styles.offerDetail}>
-                    <Text style={styles.priceInline}>{monthlyPrice}</Text>/mois
+                    <Text style={styles.priceInline}>{monthlyPrice}</Text>
+                    {t('paywall.perMonth')}
                   </Text>
                 </View>
               </Card>
@@ -280,11 +289,13 @@ export default function PaywallScreen() {
               <Card style={[styles.offer, selected === 'weekly' && styles.offerSelected]}>
                 <View style={styles.offerBody}>
                   <View style={styles.offerNameRow}>
-                    <Text style={styles.offerName}>Hebdo</Text>
+                    <Text style={styles.offerName}>{t('paywall.weekly')}</Text>
                     <TrialChip />
                   </View>
                   <Text style={styles.offerDetail}>
-                    puis <Text style={styles.priceInline}>{weeklyPrice}</Text>/sem
+                    {t('paywall.then')}
+                    <Text style={styles.priceInline}>{weeklyPrice}</Text>
+                    {t('paywall.perWeekShort')}
                   </Text>
                 </View>
               </Card>
@@ -297,22 +308,22 @@ export default function PaywallScreen() {
 
       <View style={styles.footer}>
         <PrimaryButton
-          label="Débloquer mon résultat"
+          label={t('onboarding.resultUnlockCta')}
           onPress={handlePurchase}
           disabled={busy}
         />
-        <Text style={styles.cancelNote}>Annulable à tout moment</Text>
+        <Text style={styles.cancelNote}>{t('paywall.cancelNote')}</Text>
         <View style={styles.links}>
           <Pressable onPress={handleRestore} disabled={busy} hitSlop={8}>
-            <Text style={styles.link}>Restaurer mes achats</Text>
+            <Text style={styles.link}>{t('paywall.restore')}</Text>
           </Pressable>
           <Text style={styles.linkSeparator}>·</Text>
           <Pressable onPress={() => Linking.openURL(TERMS_URL)} hitSlop={8}>
-            <Text style={styles.link}>Conditions</Text>
+            <Text style={styles.link}>{t('paywall.terms')}</Text>
           </Pressable>
           <Text style={styles.linkSeparator}>·</Text>
           <Pressable onPress={() => Linking.openURL(PRIVACY_URL)} hitSlop={8}>
-            <Text style={styles.link}>Confidentialité</Text>
+            <Text style={styles.link}>{t('paywall.privacy')}</Text>
           </Pressable>
         </View>
       </View>

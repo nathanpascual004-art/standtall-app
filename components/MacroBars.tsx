@@ -1,14 +1,13 @@
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { SectionLabel } from '@/components/SectionLabel';
+import { formatInt, useAppLanguage } from '@/lib/i18n';
 import { color, radius, space, type } from '@/theme/tokens';
 
 const BAR_HEIGHT = 64;
 const BAR_WIDTH = 22;
 
-/** Format français : 1840 → « 1 840 ». */
-const formatInt = (value: number) =>
-  Math.round(value).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 
 type Macro = { value: number; target: number };
 
@@ -20,6 +19,7 @@ type MacroBarsProps = {
 };
 
 function Bar({ macro, fill, label }: { macro: Macro; fill: string; label: string }) {
+  const lang = useAppLanguage();
   const ratio = macro.target > 0 ? Math.min(1, macro.value / macro.target) : 0;
   return (
     <View style={styles.barBlock}>
@@ -30,7 +30,7 @@ function Bar({ macro, fill, label }: { macro: Macro; fill: string; label: string
       </View>
       <SectionLabel style={styles.barLabel}>{label}</SectionLabel>
       <Text style={styles.barValue}>
-        {formatInt(macro.value)}/{formatInt(macro.target)} g
+        {formatInt(macro.value, lang)}/{formatInt(macro.target, lang)} g
       </Text>
     </View>
   );
@@ -41,16 +41,18 @@ function Bar({ macro, fill, label }: { macro: Macro; fill: string; label: string
  * (pas de camembert) + total kcal du jour.
  */
 export function MacroBars({ proteines, glucides, lipides, kcal }: MacroBarsProps) {
+  const { t } = useTranslation();
+  const lang = useAppLanguage();
   return (
     <View style={styles.row}>
       <View style={styles.bars}>
-        <Bar macro={proteines} fill={color.macro1} label="Protéines" />
-        <Bar macro={glucides} fill={color.macro2} label="Glucides" />
-        <Bar macro={lipides} fill={color.macro3} label="Lipides" />
+        <Bar macro={proteines} fill={color.macro1} label={t('nutrition.protein')} />
+        <Bar macro={glucides} fill={color.macro2} label={t('nutrition.carbs')} />
+        <Bar macro={lipides} fill={color.macro3} label={t('nutrition.fats')} />
       </View>
       <View style={styles.kcalBlock}>
-        <Text style={styles.kcalValue}>{formatInt(kcal.value)}</Text>
-        <Text style={styles.kcalTarget}>/ {formatInt(kcal.target)} kcal</Text>
+        <Text style={styles.kcalValue}>{formatInt(kcal.value, lang)}</Text>
+        <Text style={styles.kcalTarget}>/ {formatInt(kcal.target, lang)} kcal</Text>
       </View>
     </View>
   );

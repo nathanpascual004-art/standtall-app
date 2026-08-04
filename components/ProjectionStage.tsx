@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Mascot } from '@/components/Mascot';
+import { formatDecimal, useAppLanguage, type AppLanguage } from '@/lib/i18n';
 import { color, font, space, type } from '@/theme/tokens';
 
 /** Dimensions locales du visuel (layout, pas des tokens). */
@@ -10,7 +11,7 @@ const TICK_STEP = 14;
 /** Part de la hauteur de scène occupée par le personnage avachi. */
 const MIN_CHARACTER_RATIO = 0.82;
 
-const formatCm = (value: number) => `${value.toFixed(1).replace('.', ',')} cm`;
+const formatCm = (value: number, lang: AppLanguage) => `${formatDecimal(value, 1, lang)} cm`;
 
 /**
  * Scène de projection : toise graduée + personnage.
@@ -31,6 +32,7 @@ export function ProjectionStage({
   /** 0 = aujourd'hui, 1 = pleine hauteur (animable). */
   ratio: number;
 }) {
+  const lang = useAppLanguage();
   const clamped = Math.max(0, Math.min(1, ratio));
   const characterRatio = MIN_CHARACTER_RATIO + (1 - MIN_CHARACTER_RATIO) * clamped;
   const characterHeight = STAGE_HEIGHT * characterRatio;
@@ -70,7 +72,7 @@ export function ProjectionStage({
       {/* Marqueur au sommet du personnage + chiffre réel. */}
       <View pointerEvents="none" style={[styles.marker, { bottom: characterHeight }]}>
         <View style={styles.markerLine} />
-        <Text style={styles.markerLabel}>{formatCm(shownCm)}</Text>
+        <Text style={styles.markerLabel}>{formatCm(shownCm, lang)}</Text>
       </View>
     </View>
   );

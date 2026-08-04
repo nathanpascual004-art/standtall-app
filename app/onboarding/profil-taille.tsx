@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -22,6 +23,7 @@ const MAX_CM = 230;
 /** Écran 5 — taille en cm : la référence du personnage pour la projection. */
 export default function TailleScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const intention = useOnboardingStore((state) => state.answers.intention);
   const storedHeight = useOnboardingStore((state) => state.answers.heightCm);
   const setAnswer = useOnboardingStore((state) => state.setAnswer);
@@ -47,11 +49,11 @@ export default function TailleScreen() {
           total={questionCount(intention)}
         />
 
-        <Text style={styles.title}>Ta taille ?</Text>
+        <Text style={styles.title}>{t('onboarding.heightTitle')}</Text>
         <Text style={styles.subtitle}>
           {hasPosture(intention)
-            ? "C'est la référence de ton personnage — on mesure ensuite les cm que ta posture te vole."
-            : "Elle sert au calcul de tes besoins nutritionnels réels."}
+            ? t('onboarding.heightSubPosture')
+            : t('onboarding.heightSubNutrition')}
         </Text>
 
         <View style={styles.inputRow}>
@@ -70,12 +72,16 @@ export default function TailleScreen() {
         </View>
         {raw.length >= 3 && !isValid ? (
           <Text style={styles.hint}>
-            Entre une taille entre {MIN_CM} et {MAX_CM} cm.
+            {t('onboarding.heightHint', { min: MIN_CM, max: MAX_CM })}
           </Text>
         ) : null}
 
         <View style={styles.footer}>
-          <PrimaryButton label="Continuer" disabled={!isValid} onPress={handleContinue} />
+          <PrimaryButton
+            label={t('common.continue')}
+            disabled={!isValid}
+            onPress={handleContinue}
+          />
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

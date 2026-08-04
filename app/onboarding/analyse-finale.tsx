@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { AnalysisScreen } from '@/components/AnalysisScreen';
 import { buildProfileFromAnswers, computeTargets } from '@/lib/nutrition';
@@ -6,18 +7,18 @@ import { hasNutrition, hasPosture, routeAfterFinale } from '@/lib/onboarding-flo
 import { computePostureResult } from '@/lib/posture';
 import { useOnboardingStore } from '@/lib/store';
 
-const SITTING_LABELS = {
-  'moins-4': 'moins de 4 h',
-  '4-8': '4-8 h',
-  '8-plus': '8 h+',
+const SITTING_KEYS = {
+  'moins-4': 'onboarding.sittingUnder4',
+  '4-8': 'onboarding.sitting4to8',
+  '8-plus': 'onboarding.sittingOver8',
 } as const;
 
-const AGE_LABELS = {
-  '13-17': '13-17 ans',
-  '18-24': '18-24 ans',
-  '25-34': '25-34 ans',
-  '35-44': '35-44 ans',
-  '45+': '45 ans+',
+const AGE_KEYS = {
+  '13-17': 'onboarding.age1317',
+  '18-24': 'onboarding.age1824',
+  '25-34': 'onboarding.age2534',
+  '35-44': 'onboarding.age3544',
+  '45+': 'onboarding.age45plus',
 } as const;
 
 /**
@@ -26,6 +27,7 @@ const AGE_LABELS = {
  * pas dans les données).
  */
 export default function AnalyseFinaleScreen() {
+  const { t } = useTranslation();
   const answers = useOnboardingStore((state) => state.answers);
   const setNutritionProfile = useOnboardingStore((state) => state.setNutritionProfile);
   const intention = answers.intention;
@@ -43,22 +45,29 @@ export default function AnalyseFinaleScreen() {
   }, []);
 
   const sexe =
-    answers.gender === 'homme' ? 'homme' : answers.gender === 'femme' ? 'femme' : 'profil';
-  const age = answers.ageRange ? AGE_LABELS[answers.ageRange] : '—';
+    answers.gender === 'homme'
+      ? t('onboarding.finaleSexMale')
+      : answers.gender === 'femme'
+        ? t('onboarding.finaleSexFemale')
+        : t('onboarding.finaleSexOther');
+  const age = answers.ageRange ? t(AGE_KEYS[answers.ageRange]) : '—';
 
   const steps = [
-    `Profil analysé (${sexe}, ${age}, ${answers.heightCm ?? '—'} cm)`,
+    t('onboarding.finaleStepProfile', { sex: sexe, age, height: answers.heightCm ?? '—' }),
     ...(hasPosture(intention)
       ? [
-          `Posture évaluée (${
-            answers.sittingHours ? SITTING_LABELS[answers.sittingHours] : '—'
-          } assis/jour détecté)`,
-          'Ta pleine hauteur estimée',
+          t('onboarding.finaleStepPosture', {
+            sitting: answers.sittingHours ? t(SITTING_KEYS[answers.sittingHours]) : '—',
+          }),
+          t('onboarding.finaleStepFullHeight'),
         ]
       : []),
     ...(hasNutrition(intention) && targets
       ? [
-          `Besoins calculés : ~${targets.calories} kcal · ${targets.proteinesG} g de protéines`,
+          t('onboarding.finaleStepNeeds', {
+            kcal: targets.calories,
+            protein: targets.proteinesG,
+          }),
         ]
       : []),
   ];
@@ -72,7 +81,7 @@ export default function AnalyseFinaleScreen() {
       durationMs={3600}
       circle
       mascotState="encourage"
-      footnote="On croise tes réponses pour te faire un bilan personnalisé…"
+      footnote={t('onboarding.finaleFootnote')}
       nextHref={routeAfterFinale(intention)}
     />
   );

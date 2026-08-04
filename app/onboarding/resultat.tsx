@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -24,10 +25,18 @@ import { color, font, radius, space, type } from '@/theme/tokens';
  */
 export default function ResultScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const answers = useOnboardingStore((state) => state.answers);
   const result = computePostureResult(answers);
   const posture = hasPosture(answers.intention);
   const nutrition = hasNutrition(answers.intention);
+
+  const levelLabel =
+    result.level === 'bonne'
+      ? t('onboarding.postureLevelGood')
+      : result.level === 'moyenne'
+        ? t('onboarding.postureLevelMedium')
+        : t('onboarding.postureLevelFix');
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
@@ -38,10 +47,12 @@ export default function ResultScreen() {
       >
         <View style={styles.header}>
           <Text style={styles.kicker}>
-            {posture ? 'Ton plan pour reprendre ta taille est prêt' : 'Ton plan est prêt'}
+            {posture ? t('onboarding.resultKickerPosture') : t('onboarding.resultKicker')}
           </Text>
           <Text style={styles.headline}>
-            {posture ? 'Voici ta vraie stature' : 'Ton plan nutrition'}
+            {posture
+              ? t('onboarding.resultHeadlinePosture')
+              : t('onboarding.resultHeadlineNutrition')}
           </Text>
         </View>
 
@@ -49,44 +60,50 @@ export default function ResultScreen() {
           <>
             <View style={styles.statRow}>
               <StatCard
-                label="Stature avachi"
+                label={t('onboarding.resultSlouchedLabel')}
                 value={`${answers.heightCm ?? '—'} cm`}
                 style={styles.statCard}
               />
               <Pressable
                 onPress={() => router.push('/paywall')}
                 accessibilityRole="button"
-                accessibilityLabel="Débloquer la stature redressée"
+                accessibilityLabel={t('onboarding.resultUnlockUprightA11y')}
                 style={({ pressed }) => [styles.statCard, pressed && styles.pressed]}
               >
-                <StatCard label="Bien redressé" value="•••,• cm" locked style={styles.fill} />
+                <StatCard
+                  label={t('onboarding.resultUprightLabel')}
+                  value={t('onboarding.resultMaskedCm')}
+                  locked
+                  style={styles.fill}
+                />
               </Pressable>
             </View>
 
             <Card style={styles.gaugeCard}>
               <Toise
                 score={result.postureScore}
-                label="Score de posture"
-                subtext={`Posture — ${result.level}`}
+                label={t('onboarding.resultPostureScoreLabel')}
+                subtext={t('onboarding.resultPostureLevel', { level: levelLabel })}
               />
               <Text style={styles.percentile}>
-                Meilleure posture que{' '}
-                <Text style={styles.percentileValue}>{result.postureScore}%</Text> des
-                gens de ton âge
+                {t('onboarding.resultPercentileBefore')}
+                <Text style={styles.percentileValue}>{result.postureScore}%</Text>
+                {t('onboarding.resultPercentileAfter')}
               </Text>
             </Card>
 
             <Pressable
               onPress={() => router.push('/paywall')}
               accessibilityRole="button"
-              accessibilityLabel="Débloquer les centimètres récupérables"
+              accessibilityLabel={t('onboarding.resultUnlockCmA11y')}
               style={({ pressed }) => (pressed ? styles.pressed : null)}
             >
               <Card style={styles.teaserCard}>
                 <View style={styles.teaserRow}>
                   <Text style={styles.teaserText}>
-                    Tu récupères <Text style={styles.blurredInline}>•,• cm</Text> en
-                    te redressant
+                    {t('onboarding.resultRegainBefore')}
+                    <Text style={styles.blurredInline}>{t('onboarding.resultMaskedSmallCm')}</Text>
+                    {t('onboarding.resultRegainAfter')}
                   </Text>
                   <Ionicons name="lock-closed" size={16} color={color.textSecond} />
                 </View>
@@ -96,14 +113,12 @@ export default function ResultScreen() {
             <Pressable
               onPress={() => router.push('/paywall')}
               accessibilityRole="button"
-              accessibilityLabel="Débloquer le programme personnalisé"
+              accessibilityLabel={t('onboarding.resultUnlockProgramA11y')}
               style={({ pressed }) => (pressed ? styles.pressed : null)}
             >
               <Card style={styles.teaserCard}>
                 <View style={styles.teaserRow}>
-                  <Text style={styles.teaserTitle}>
-                    Ton programme d'étirements personnalisé
-                  </Text>
+                  <Text style={styles.teaserTitle}>{t('onboarding.resultProgramTitle')}</Text>
                   <Ionicons name="lock-closed" size={16} color={color.textSecond} />
                 </View>
                 <View style={styles.programLines}>
@@ -120,19 +135,21 @@ export default function ResultScreen() {
           <Pressable
             onPress={() => router.push('/paywall')}
             accessibilityRole="button"
-            accessibilityLabel="Débloquer le plan nutrition"
+            accessibilityLabel={t('onboarding.resultUnlockNutritionA11y')}
             style={({ pressed }) => (pressed ? styles.pressed : null)}
           >
             <Card style={styles.teaserCard}>
               <View style={styles.teaserRow}>
-                <Text style={styles.teaserTitle}>Ton plan nutrition sur mesure</Text>
+                <Text style={styles.teaserTitle}>{t('onboarding.resultNutritionTitle')}</Text>
                 <Ionicons name="lock-closed" size={16} color={color.textSecond} />
               </View>
               <View style={styles.programLines}>
                 <Text style={styles.teaserText}>
-                  Objectif : <Text style={styles.blurredInline}>• ••• kcal</Text> / jour
+                  {t('onboarding.resultNutritionGoalBefore')}
+                  <Text style={styles.blurredInline}>{t('onboarding.resultMaskedKcal')}</Text>
+                  {t('onboarding.resultNutritionGoalAfter')}
                 </Text>
-                <Text style={styles.blurredLine}>Protéines ••• g · Glucides ••• g · Lipides •• g</Text>
+                <Text style={styles.blurredLine}>{t('onboarding.resultMaskedMacros')}</Text>
               </View>
             </Card>
           </Pressable>
@@ -144,17 +161,17 @@ export default function ResultScreen() {
           </View>
           <Text style={styles.benefitText}>
             {posture && nutrition
-              ? 'Débloque ta stature redressée, ton programme et ton plan nutrition'
+              ? t('onboarding.resultBenefitBoth')
               : posture
-                ? 'Débloque ta stature redressée + ton programme perso'
-                : 'Débloque ton objectif calorique + tes macros sur mesure'}
+                ? t('onboarding.resultBenefitPosture')
+                : t('onboarding.resultBenefitNutrition')}
           </Text>
         </View>
       </ScrollView>
 
       <View style={styles.footer}>
         <PrimaryButton
-          label="Débloquer mon résultat"
+          label={t('onboarding.resultUnlockCta')}
           onPress={() => router.push('/paywall')}
         />
       </View>

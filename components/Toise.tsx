@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -61,10 +62,12 @@ function useCountUp(target: number, enabled: boolean): number {
 export function Toise({
   score,
   delta = 0,
-  label = 'Score de stature',
+  label,
   subtext,
   height = 168,
 }: ToiseProps) {
+  const { t } = useTranslation();
+  const resolvedLabel = label ?? t('common.statureScore');
   const reducedMotion = useReducedMotion();
   const clamped = Math.min(100, Math.max(0, score));
   const displayed = useCountUp(clamped, !reducedMotion);
@@ -108,7 +111,7 @@ export function Toise({
       </View>
 
       <View style={styles.body}>
-        <SectionLabel>{label}</SectionLabel>
+        <SectionLabel>{resolvedLabel}</SectionLabel>
         <View style={styles.scoreRow}>
           <Text style={styles.score}>{displayed}</Text>
           {delta > 0 ? (

@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ScrollView } from 'react-native';
 import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
@@ -13,6 +14,7 @@ import { PrimaryButton } from '@/components/PrimaryButton';
 import { ProgressBar } from '@/components/ProgressBar';
 import { SectionLabel } from '@/components/SectionLabel';
 import { sessionCover } from '@/lib/covers';
+import { formatDecimal, formatLongDate, useAppLanguage, type AppLanguage } from '@/lib/i18n';
 import {
   buildJourney,
   daysDoneInLevel,
@@ -27,18 +29,8 @@ import { todayKey, useOnboardingStore } from '@/lib/store';
 import { currentWeekKeys } from '@/lib/week';
 import { borderWidth, color, duration, font, radius, space, staggerDelay, type } from '@/theme/tokens';
 
-const DAYS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
-const MONTHS = [
-  'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
-  'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre',
-];
 
-const formatToday = () => {
-  const now = new Date();
-  return `${DAYS[now.getDay()]} ${now.getDate()} ${MONTHS[now.getMonth()]}`;
-};
-
-const formatCm = (value: number) => `${value.toFixed(1).replace('.', ',')} cm`;
+const formatCm = (value: number, lang: AppLanguage) => `${formatDecimal(value, 1, lang)} cm`;
 
 /** Dimensions de layout locales (pas des tokens de design). */
 const RING_SIZE = 132;
@@ -152,16 +144,22 @@ function routineContent(
   session: (typeof SESSIONS)[number],
   levelLabel: string,
   router: ReturnType<typeof useRouter>,
+  t: (key: string, options?: Record<string, unknown>) => string,
+  lang: AppLanguage,
   onImage = false,
 ) {
   return (
     <>
-      <Text style={styles.routineTitle}>{session.titre}</Text>
+      <Text style={styles.routineTitle}>{session.titre[lang]}</Text>
       <Text style={[styles.routineMeta, onImage && styles.routineMetaOnImage]}>
-        {session.durationMin} min · {session.exercises.length} exercices · {levelLabel}
+        {t('home.routineMeta', {
+          min: session.durationMin,
+          count: session.exercises.length,
+          level: levelLabel,
+        })}
       </Text>
       <PrimaryButton
-        label="Démarrer la séance"
+        label={t('program.startSession')}
         onPress={() => router.push(`/session/${session.id}?start=1`)}
         style={styles.routineButton}
       />
@@ -170,7 +168,7 @@ function routineContent(
         accessibilityRole="button"
         style={styles.routineLink}
       >
-        <Text style={styles.routineLinkLabel}>Voir les exercices →</Text>
+        <Text style={styles.routineLinkLabel}>{t('home.seeExercises')}</Text>
       </Pressable>
     </>
   );
@@ -179,6 +177,8 @@ function routineContent(
 /** Accueil — alignement, stats, routine du jour (maquette de référence). */
 export default function AccueilScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
+  const lang = useAppLanguage();
   const answers = useOnboardingStore((state) => state.answers);
   const completedSessions = useOnboardingStore((state) => state.completedSessions);
   const progress = useOnboardingStore((state) => state.progress);
@@ -225,14 +225,14 @@ export default function AccueilScreen() {
         {/* En-tête. */}
         <View style={styles.header}>
           <View style={styles.headerText}>
-            <Text style={styles.headerDate}>{formatToday()}</Text>
+            <Text style={styles.headerDate}>{formatLongDate(lang)}</Text>
             <Text style={styles.headerTitle}>
-              Prêt à progresser{firstName ? `, ${firstName}` : ''} ?
+              {firstName
+                ? t('home.greeting', { name: firstName })
+                : t('home.greetingNoName')}
             </Text>
             <Text style={styles.headerSub}>
-              {doneToday.length > 0
-                ? 'Séance du jour faite — bien joué.'
-                : "Ta routine du jour t'attend."}
+              {doneToday.length > 0 ? t('home.subDone') : t('home.subTodo')}
             </Text>
           </View>
           <PressableScale
@@ -243,7 +243,7 @@ export default function AccueilScreen() {
               );
             }}
             accessibilityRole="button"
-            accessibilityLabel="Notifications"
+            accessibilityLabel={t('home.notificationsA11y')}
             hitSlop={8}
             style={styles.gear}
           >
@@ -254,14 +254,16 @@ export default function AccueilScreen() {
         {/* Hero — ton alignement. */}
         <Animated.View entering={cascade(0)}>
           <Card style={styles.heroCard}>
-            <SectionLabel style={styles.heroLabel}>Ton alignement</SectionLabel>
+            <SectionLabel style={styles.heroLabel}>{t('home.alignment')}</SectionLabel>
             <View style={styles.heroRow}>
               <View style={styles.heroLeft}>
                 <View style={styles.scoreRow}>
                   <Text style={styles.scoreValue}>{currentScore}</Text>
                   <Text style={styles.scoreMax}>/100</Text>
                 </View>
-                <Text style={styles.levelName}>Niveau {currentLevel.label}</Text>
+                <Text style={styles.levelName}>
+                  {t('home.levelName', { label: currentLevel.label[lang] })}
+                </Text>
                 <ProgressBar progress={levelRatio} style={styles.levelBar} />
               </View>
               <ScoreRing score={currentScore} />
@@ -273,20 +275,20 @@ export default function AccueilScreen() {
                 <Ionicons name="trending-up-outline" size={17} color={color.accent} />
               </View>
               <View style={styles.potentialText}>
-                <Text style={styles.potentialLabel}>Potentiel postural estimé</Text>
+                <Text style={styles.potentialLabel}>{t('home.potentialLabel')}</Text>
                 <Text style={styles.potentialValue}>
-                  <Text style={styles.potentialCm}>+{formatCm(result.heightLossCm)}</Text>
-                  <Text style={styles.potentialSuffix}> de hauteur posturale</Text>
+                  <Text style={styles.potentialCm}>+{formatCm(result.heightLossCm, lang)}</Text>
+                  <Text style={styles.potentialSuffix}>{t('home.potentialSuffix')}</Text>
                 </Text>
                 {/* Lien sur sa propre ligne : jamais tronqué ni superposé. */}
                 <Pressable
                   onPress={() => router.push('/(tabs)/progres')}
                   accessibilityRole="button"
-                  accessibilityLabel="Voir mon analyse"
+                  accessibilityLabel={t('home.seeAnalysisA11y')}
                   hitSlop={6}
                   style={styles.potentialLinkRow}
                 >
-                  <Text style={styles.potentialLink}>Voir mon analyse →</Text>
+                  <Text style={styles.potentialLink}>{t('home.seeAnalysis')}</Text>
                 </Pressable>
               </View>
             </View>
@@ -297,30 +299,30 @@ export default function AccueilScreen() {
         <Animated.View entering={cascade(1)} style={styles.tileRow}>
           <StatTile
             icon="flame-outline"
-            label="Série"
+            label={t('home.tileStreak')}
             value={String(streak)}
-            unit={streak > 1 ? 'jours' : 'jour'}
-            subtitle="Continue comme ça !"
+            unit={streak > 1 ? t('common.days') : t('common.day')}
+            subtitle={t('home.tileStreakSub')}
           />
           <StatTile
             icon="calendar-outline"
-            label="Séances"
+            label={t('home.tileSessions')}
             value={String(sessionsThisWeek)}
-            subtitle="Cette semaine"
+            subtitle={t('home.tileSessionsSub')}
           />
           <StatTile
             icon="locate-outline"
-            label="Objectif"
+            label={t('home.tileGoal')}
             value={String(objectifPct)}
             unit="%"
-            subtitle="Objectif hebdo"
+            subtitle={t('home.tileGoalSub')}
           />
         </Animated.View>
 
         {/* Routine du jour — couverture image de la séance quand l'asset
             existe (lib/covers), carte actuelle en fallback. */}
         <Animated.View entering={cascade(2)}>
-          <SectionLabel style={styles.routineLabel}>Routine du jour</SectionLabel>
+          <SectionLabel style={styles.routineLabel}>{t('home.routineOfDay')}</SectionLabel>
           {sessionCover(nextSession.id) ? (
             <BrandImage
               source={sessionCover(nextSession.id)}
@@ -328,14 +330,27 @@ export default function AccueilScreen() {
               borderRadius={radius.card}
               scrim
             >
-              {routineContent(nextSession, `Niveau ${currentLevel.level}`, router, true)}
+              {routineContent(
+                nextSession,
+                t('common.levelN', { level: currentLevel.level }),
+                router,
+                t,
+                lang,
+                true,
+              )}
             </BrandImage>
           ) : (
             <Card style={styles.routineCard}>
               <View style={styles.routineGhost} pointerEvents="none">
                 <Ionicons name="body-outline" size={GHOST_ICON_SIZE} color={color.surfaceAlt} />
               </View>
-              {routineContent(nextSession, `Niveau ${currentLevel.level}`, router)}
+              {routineContent(
+                nextSession,
+                t('common.levelN', { level: currentLevel.level }),
+                router,
+                t,
+                lang,
+              )}
             </Card>
           )}
         </Animated.View>

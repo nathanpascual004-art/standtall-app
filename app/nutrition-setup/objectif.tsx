@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,15 +12,16 @@ import type { NutritionGoal } from '@/lib/nutrition';
 import { useOnboardingStore } from '@/lib/store';
 import { color, duration, space, type } from '@/theme/tokens';
 
-const GOALS: { value: NutritionGoal; label: string }[] = [
-  { value: 'masse', label: 'Prise de masse' },
-  { value: 'seche', label: 'Sèche' },
-  { value: 'maintien', label: 'Maintien' },
+const GOALS: { value: NutritionGoal; labelKey: string }[] = [
+  { value: 'masse', labelKey: 'profile.goalMass' },
+  { value: 'seche', labelKey: 'profile.goalCut' },
+  { value: 'maintien', labelKey: 'profile.goalMaintain' },
 ];
 
 /** Setup nutrition 2/4 — objectif. */
 export default function NutritionGoalScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const draft = useOnboardingStore((state) => state.nutritionDraft);
   const setNutritionDraft = useOnboardingStore((state) => state.setNutritionDraft);
   const [selected, setSelected] = useState<NutritionGoal | undefined>(draft.goal);
@@ -33,7 +35,7 @@ export default function NutritionGoalScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <OnboardingProgress step={2} total={4} />
-      <Text style={styles.title}>Ton objectif nutrition ?</Text>
+      <Text style={styles.title}>{t('nutrition.setupGoalTitle')}</Text>
 
       {/* Une seule animation par écran : apparition douce du bloc d'options. */}
       <Animated.View
@@ -43,7 +45,7 @@ export default function NutritionGoalScreen() {
         {GOALS.map((goal) => (
           <QuizOption
             key={goal.value}
-            label={goal.label}
+            label={t(goal.labelKey)}
             selected={selected === goal.value}
             onPress={() => setSelected(goal.value)}
           />
@@ -51,7 +53,11 @@ export default function NutritionGoalScreen() {
       </Animated.View>
 
       <View style={styles.footer}>
-        <PrimaryButton label="Continuer" disabled={!selected} onPress={handleContinue} />
+        <PrimaryButton
+          label={t('common.continue')}
+          disabled={!selected}
+          onPress={handleContinue}
+        />
       </View>
     </SafeAreaView>
   );

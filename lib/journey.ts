@@ -9,6 +9,7 @@
  * Honnêteté : niveaux et trophées récompensent la régularité et la
  * posture — jamais une promesse de centimètres.
  */
+import type { Localized } from './i18n';
 import { SESSIONS, type Session } from './program';
 import { dayDiffInDays } from './progress';
 
@@ -18,7 +19,12 @@ export const JOURNEY_LEVELS = 4;
 export const JOURNEY_DAY_COUNT = DAYS_PER_LEVEL * JOURNEY_LEVELS;
 
 /** Intitulés de niveau sobres (pas d'emoji piment, pas de « croissance »). */
-export const LEVEL_LABELS = ['Fondation', 'Équilibre', 'Posture avancée', 'Performance'] as const;
+export const LEVEL_LABELS: readonly Localized[] = [
+  { fr: 'Fondation', en: 'Foundation' },
+  { fr: 'Équilibre', en: 'Balance' },
+  { fr: 'Posture avancée', en: 'Advanced posture' },
+  { fr: 'Performance', en: 'Performance' },
+];
 
 export type JourneyDay = {
   /** Index global 0-based (0 = Jour 1). */
@@ -32,7 +38,7 @@ export type JourneyDay = {
 
 export type JourneyLevel = {
   level: number;
-  label: string;
+  label: Localized;
   days: JourneyDay[];
 };
 

@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,6 +21,7 @@ import {
   type Session,
 } from '@/lib/program';
 import { sessionCover } from '@/lib/covers';
+import { useAppLanguage } from '@/lib/i18n';
 import { ensureReminderPermission, scheduleStreakReminder } from '@/lib/reminders';
 import { todayKey, useOnboardingStore } from '@/lib/store';
 import {
@@ -58,6 +60,8 @@ function SessionPlayer({
   onQuit: () => void;
   onFinished: () => void;
 }) {
+  const { t } = useTranslation();
+  const lang = useAppLanguage();
   const [index, setIndex] = useState(0);
   const exercise = session.exercises[index];
   const [remaining, setRemaining] = useState(exercise.durationSec);
@@ -94,14 +98,14 @@ function SessionPlayer({
         <PressableScale
           onPress={onQuit}
           accessibilityRole="button"
-          accessibilityLabel="Quitter la séance"
+          accessibilityLabel={t('program.quitSessionA11y')}
           hitSlop={12}
           style={styles.iconButton}
         >
           <Ionicons name="close" size={20} color={color.textMuted} />
         </PressableScale>
         <Text style={styles.playerStep}>
-          Exercice {index + 1}/{session.exercises.length}
+          {t('program.exerciseStep', { n: index + 1, total: session.exercises.length })}
         </Text>
         <View style={styles.iconButton} />
       </View>
@@ -111,11 +115,11 @@ function SessionPlayer({
       <View style={styles.playerBody}>
         <View style={styles.playerHead}>
           <View style={styles.cibleChip}>
-            <Text style={styles.cibleLabel}>{exercise.cible}</Text>
+            <Text style={styles.cibleLabel}>{exercise.cible[lang]}</Text>
           </View>
-          <Text style={styles.playerExercise}>{exercise.nom}</Text>
+          <Text style={styles.playerExercise}>{exercise.nom[lang]}</Text>
           <Text style={styles.playerDescription} numberOfLines={3}>
-            {exercise.description}
+            {exercise.description[lang]}
           </Text>
         </View>
 
@@ -140,7 +144,7 @@ function SessionPlayer({
 
       <View style={styles.footer}>
         <PrimaryButton
-          label={isLast ? 'Terminer la séance' : 'Suivant'}
+          label={isLast ? t('program.finishSession') : t('program.next')}
           onPress={handleNext}
         />
       </View>
@@ -151,6 +155,8 @@ function SessionPlayer({
 /** Détail d'une séance : exercices + lecteur + complétion. */
 export default function SessionScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
+  const lang = useAppLanguage();
   const { id, start } = useLocalSearchParams<{ id: string; start?: string }>();
   const session = getSession(id);
   const completeSession = useOnboardingStore((state) => state.completeSession);
@@ -181,9 +187,9 @@ export default function SessionScreen() {
   if (!session) {
     return (
       <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-        <Text style={styles.notFoundTitle}>Séance introuvable</Text>
+        <Text style={styles.notFoundTitle}>{t('program.sessionNotFound')}</Text>
         <View style={styles.footer}>
-          <PrimaryButton label="Retour" onPress={() => router.back()} />
+          <PrimaryButton label={t('common.back')} onPress={() => router.back()} />
         </View>
       </SafeAreaView>
     );
@@ -202,7 +208,7 @@ export default function SessionScreen() {
             <PressableScale
               onPress={() => router.back()}
               accessibilityRole="button"
-              accessibilityLabel="Retour"
+              accessibilityLabel={t('common.back')}
               hitSlop={12}
               style={styles.iconButton}
             >
@@ -224,9 +230,12 @@ export default function SessionScreen() {
                 scrim
                 style={styles.hero}
               >
-                <Text style={styles.heroTitle}>{session.titre}</Text>
+                <Text style={styles.heroTitle}>{session.titre[lang]}</Text>
                 <Text style={styles.heroMeta}>
-                  {session.durationMin} min · {session.exercises.length} exercices
+                  {t('program.sessionMeta', {
+                    min: session.durationMin,
+                    count: session.exercises.length,
+                  })}
                 </Text>
               </BrandImage>
             </Animated.View>
@@ -235,24 +244,24 @@ export default function SessionScreen() {
               {session.exercises.map((exercise) => (
                 <Card key={exercise.id} style={styles.exerciseCard}>
                   <View style={styles.exerciseHeader}>
-                    <Text style={styles.exerciseName}>{exercise.nom}</Text>
+                    <Text style={styles.exerciseName}>{exercise.nom[lang]}</Text>
                     <Text style={styles.exerciseDuration}>
                       {formatExerciseDuration(exercise.durationSec)}
                     </Text>
                   </View>
-                  <Text style={styles.exerciseDescription}>{exercise.description}</Text>
+                  <Text style={styles.exerciseDescription}>{exercise.description[lang]}</Text>
                   <View style={styles.cibleChip}>
-                    <Text style={styles.cibleLabel}>{exercise.cible}</Text>
+                    <Text style={styles.cibleLabel}>{exercise.cible[lang]}</Text>
                   </View>
                 </Card>
               ))}
             </Animated.View>
 
-            <Text style={styles.disclaimer}>{PROGRAM_DISCLAIMER}</Text>
+            <Text style={styles.disclaimer}>{PROGRAM_DISCLAIMER[lang]}</Text>
           </ScrollView>
 
           <View style={styles.footer}>
-            <PrimaryButton label="Démarrer la séance" onPress={() => setMode('player')} />
+            <PrimaryButton label={t('program.startSession')} onPress={() => setMode('player')} />
           </View>
         </>
       ) : null}
@@ -270,14 +279,14 @@ export default function SessionScreen() {
           <View style={styles.doneContent}>
             <CheckBurst />
             <Mascot state="celebrate" size={MASCOT_SIZE} />
-            <Text style={styles.doneTitle}>Séance terminée</Text>
+            <Text style={styles.doneTitle}>{t('program.sessionDone')}</Text>
 
             {/* Récompenses de la séance : XP + série (+ joker éventuel). */}
             {xpEvent ? (
               <Text style={styles.doneXp}>
                 +{xpEvent.amount} XP
                 {xpEvent.bonusApplied ? (
-                  <Text style={styles.doneXpBonus}>  · bonus série</Text>
+                  <Text style={styles.doneXpBonus}>  · {t('program.streakBonus')}</Text>
                 ) : null}
               </Text>
             ) : null}
@@ -285,38 +294,41 @@ export default function SessionScreen() {
               <View style={styles.doneStreakRow}>
                 <Ionicons name="flame" size={18} color={color.accent} />
                 <Text style={styles.doneStreak}>
-                  Série : {streakEvent.streak} jour{streakEvent.streak > 1 ? 's' : ''}
+                  {t('program.streakLine', {
+                    count: streakEvent.streak,
+                    unit: streakEvent.streak > 1 ? t('common.days') : t('common.day'),
+                  })}
                 </Text>
               </View>
             ) : null}
             {freezeUsed ? (
               <View style={styles.doneBanner}>
                 <Ionicons name="snow-outline" size={16} color={color.accent} />
-                <Text style={styles.doneBannerText}>Série sauvée grâce à ton joker</Text>
+                <Text style={styles.doneBannerText}>{t('program.freezeUsed')}</Text>
               </View>
             ) : null}
             {levelUp ? (
               <View style={styles.doneBanner}>
                 <Ionicons name="trending-up-outline" size={16} color={color.accent} />
                 <Text style={styles.doneBannerText}>
-                  Niveau {levelUp.level} — {levelUp.rank}
+                  {t('common.levelN', { level: levelUp.level })} — {levelUp.rank[lang]}
                 </Text>
               </View>
             ) : null}
             {newBadges.map((event) => (
               <View key={event.badge.id} style={styles.doneBanner}>
                 <Ionicons name="ribbon-outline" size={16} color={color.accent} />
-                <Text style={styles.doneBannerText}>Badge : {event.badge.titre}</Text>
+                <Text style={styles.doneBannerText}>
+                  {t('program.badgeLine', { title: event.badge.titre[lang] })}
+                </Text>
               </View>
             ))}
 
-            <Text style={styles.doneHint}>
-              Bien joué. La régularité fait le redressement — reviens demain.
-            </Text>
+            <Text style={styles.doneHint}>{t('program.doneHint')}</Text>
           </View>
           <View style={styles.footer}>
             <PrimaryButton
-              label="Retour au programme"
+              label={t('program.backToProgram')}
               onPress={() => {
                 clearProgressEvents();
                 router.replace('/(tabs)/programme');

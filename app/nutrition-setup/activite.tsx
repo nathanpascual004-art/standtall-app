@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,16 +12,17 @@ import type { ActivityLevel } from '@/lib/nutrition';
 import { useOnboardingStore } from '@/lib/store';
 import { color, duration, space, type } from '@/theme/tokens';
 
-const LEVELS: { value: ActivityLevel; label: string }[] = [
-  { value: 'sedentaire', label: 'Sédentaire — peu ou pas de sport' },
-  { value: 'leger', label: 'Léger — 1 à 2 séances / semaine' },
-  { value: 'modere', label: 'Modéré — 3 à 4 séances / semaine' },
-  { value: 'tres-actif', label: 'Très actif — 5+ séances / semaine' },
+const LEVELS: { value: ActivityLevel; labelKey: string }[] = [
+  { value: 'sedentaire', labelKey: 'nutrition.setupActivitySedentary' },
+  { value: 'leger', labelKey: 'nutrition.setupActivityLight' },
+  { value: 'modere', labelKey: 'nutrition.setupActivityModerate' },
+  { value: 'tres-actif', labelKey: 'nutrition.setupActivityVeryActive' },
 ];
 
 /** Setup nutrition 3/4 — niveau d'activité. */
 export default function ActivityScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const draft = useOnboardingStore((state) => state.nutritionDraft);
   const answers = useOnboardingStore((state) => state.answers);
   const setNutritionDraft = useOnboardingStore((state) => state.setNutritionDraft);
@@ -37,7 +39,7 @@ export default function ActivityScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <OnboardingProgress step={3} total={4} />
-      <Text style={styles.title}>Ton niveau d'activité ?</Text>
+      <Text style={styles.title}>{t('onboarding.activityTitle')}</Text>
 
       {/* Une seule animation par écran : apparition douce du bloc d'options. */}
       <Animated.View
@@ -47,7 +49,7 @@ export default function ActivityScreen() {
         {LEVELS.map((level) => (
           <QuizOption
             key={level.value}
-            label={level.label}
+            label={t(level.labelKey)}
             selected={selected === level.value}
             onPress={() => setSelected(level.value)}
           />
@@ -55,7 +57,11 @@ export default function ActivityScreen() {
       </Animated.View>
 
       <View style={styles.footer}>
-        <PrimaryButton label="Continuer" disabled={!selected} onPress={handleContinue} />
+        <PrimaryButton
+          label={t('common.continue')}
+          disabled={!selected}
+          onPress={handleContinue}
+        />
       </View>
     </SafeAreaView>
   );

@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,6 +13,7 @@ import { PrimaryButton } from '@/components/PrimaryButton';
 import { ProgressBar } from '@/components/ProgressBar';
 import { SectionLabel } from '@/components/SectionLabel';
 import { sessionCover } from '@/lib/covers';
+import { useAppLanguage } from '@/lib/i18n';
 import {
   buildJourney,
   daysDoneInLevel,
@@ -72,6 +74,8 @@ function WeekDot({
 /** Onglet Programme — niveau en cours, semaine, prochaine séance, niveaux. */
 export default function ProgrammeScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
+  const lang = useAppLanguage();
   const journey = useOnboardingStore((state) => state.journey);
   const progress = useOnboardingStore((state) => state.progress);
   const completedSessions = useOnboardingStore((state) => state.completedSessions);
@@ -95,7 +99,7 @@ export default function ProgrammeScreen() {
     const isToday = key === today;
     return {
       key,
-      letter: WEEK_LETTERS[index],
+      letter: WEEK_LETTERS[lang][index],
       dayOfMonth: Number(key.slice(-2)),
       state: done ? ('done' as const) : isToday ? ('today' as const) : key < today ? ('past' as const) : ('future' as const),
     };
@@ -109,11 +113,11 @@ export default function ProgrammeScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>Programme</Text>
+          <Text style={styles.title}>{t('common.tabProgram')}</Text>
           <PressableScale
             onPress={() => router.push('/(tabs)/profil')}
             accessibilityRole="button"
-            accessibilityLabel="Réglages"
+            accessibilityLabel={t('program.settingsA11y')}
             hitSlop={8}
             style={styles.iconButton}
           >
@@ -125,14 +129,14 @@ export default function ProgrammeScreen() {
         <Animated.View entering={cascade(0)}>
           <Card style={styles.levelCard}>
             <View style={styles.levelLeft}>
-              <SectionLabel>Niveau</SectionLabel>
-              <Text style={styles.levelName}>{currentLevel.label}</Text>
+              <SectionLabel>{t('program.levelLabel')}</SectionLabel>
+              <Text style={styles.levelName}>{currentLevel.label[lang]}</Text>
               <Text style={styles.levelMeta}>
-                Niveau {currentLevel.level} sur {JOURNEY_LEVELS}
+                {t('program.levelOf', { level: currentLevel.level, total: JOURNEY_LEVELS })}
               </Text>
             </View>
             <View style={styles.levelRight}>
-              <Text style={styles.levelProgressLabel}>Progression du niveau</Text>
+              <Text style={styles.levelProgressLabel}>{t('program.levelProgress')}</Text>
               <Text style={styles.levelPct}>{levelPct}%</Text>
               <ProgressBar progress={levelDone / DAYS_PER_LEVEL} />
               <Text style={styles.levelXp}>
@@ -144,7 +148,7 @@ export default function ProgrammeScreen() {
 
         {/* Séances de la semaine. */}
         <Animated.View entering={cascade(1)}>
-          <SectionLabel style={styles.sectionLabel}>Séances de la semaine</SectionLabel>
+          <SectionLabel style={styles.sectionLabel}>{t('program.weekSessions')}</SectionLabel>
           <Card style={styles.weekCard}>
             {week.map((day) => (
               <WeekDot
@@ -159,7 +163,7 @@ export default function ProgrammeScreen() {
 
         {/* Prochaine séance. */}
         <Animated.View entering={cascade(2)}>
-          <SectionLabel style={styles.sectionLabel}>Prochaine séance</SectionLabel>
+          <SectionLabel style={styles.sectionLabel}>{t('program.nextSession')}</SectionLabel>
           <BrandImage
             source={sessionCover(nextSession.id)}
             aspectRatio={16 / 9}
@@ -167,12 +171,15 @@ export default function ProgrammeScreen() {
             icon="body-outline"
             scrim
           >
-            <Text style={styles.nextTitle}>{nextSession.titre}</Text>
+            <Text style={styles.nextTitle}>{nextSession.titre[lang]}</Text>
             <Text style={styles.nextMeta}>
-              {nextSession.durationMin} min · {nextSession.exercises.length} exercices
+              {t('program.sessionMeta', {
+                min: nextSession.durationMin,
+                count: nextSession.exercises.length,
+              })}
             </Text>
             <PrimaryButton
-              label="Commencer"
+              label={t('program.startShort')}
               onPress={() => router.push(`/session/${nextSession.id}?start=1`)}
               style={styles.nextButton}
             />
@@ -181,7 +188,7 @@ export default function ProgrammeScreen() {
 
         {/* Les niveaux du programme. */}
         <Animated.View entering={cascade(3)}>
-          <SectionLabel style={styles.sectionLabel}>Programme</SectionLabel>
+          <SectionLabel style={styles.sectionLabel}>{t('common.tabProgram')}</SectionLabel>
           <View style={styles.levelList}>
             {levels.map((level) => {
               const done = daysDoneInLevel(journey, level.level);
@@ -196,10 +203,10 @@ export default function ProgrammeScreen() {
                     <Text
                       style={[styles.levelRowName, locked && styles.levelRowNameLocked]}
                     >
-                      {level.label}
+                      {level.label[lang]}
                     </Text>
                     <Text style={styles.levelRowMeta}>
-                      {done}/{DAYS_PER_LEVEL} jours
+                      {done}/{DAYS_PER_LEVEL} {t('common.days')}
                     </Text>
                   </View>
                   {locked ? (
@@ -215,7 +222,7 @@ export default function ProgrammeScreen() {
           </View>
         </Animated.View>
 
-        <Text style={styles.disclaimer}>{PROGRAM_DISCLAIMER}</Text>
+        <Text style={styles.disclaimer}>{PROGRAM_DISCLAIMER[lang]}</Text>
       </ScrollView>
     </SafeAreaView>
   );

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
@@ -20,6 +21,7 @@ export function CaloriesRing({
   target: number;
   size?: number;
 }) {
+  const { t } = useTranslation();
   const radius = (size - STROKE) / 2;
   const circumference = 2 * Math.PI * radius;
   const ratio = target > 0 ? Math.max(0, Math.min(1, consumed / target)) : 0;
@@ -52,7 +54,9 @@ export function CaloriesRing({
       </Svg>
       <View style={styles.center}>
         <Text style={styles.value}>{remaining}</Text>
-        <Text style={styles.label}>{over ? 'objectif atteint' : 'kcal restantes'}</Text>
+        <Text style={styles.label}>
+          {over ? t('nutrition.goalReached') : t('nutrition.kcalLeft')}
+        </Text>
       </View>
     </View>
   );

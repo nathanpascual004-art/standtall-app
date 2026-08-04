@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { AnalysisScreen } from '@/components/AnalysisScreen';
 import { buildProfileFromAnswers, computeTargets } from '@/lib/nutrition';
@@ -10,6 +11,7 @@ import { useOnboardingStore } from '@/lib/store';
  * l'onglet Nutrition est prêt dès la fin de l'onboarding.
  */
 export default function AnalyseNutritionScreen() {
+  const { t } = useTranslation();
   const answers = useOnboardingStore((state) => state.answers);
   const setNutritionProfile = useOnboardingStore((state) => state.setNutritionProfile);
 
@@ -23,7 +25,7 @@ export default function AnalyseNutritionScreen() {
 
   return (
     <AnalysisScreen
-      steps={['Calcul de tes besoins nutritionnels…']}
+      steps={[t('onboarding.analysisNutritionStep')]}
       durationMs={2200}
       nextHref="/onboarding/analyse-finale"
     />

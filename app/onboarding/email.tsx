@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -26,6 +27,7 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
  */
 export default function EmailScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const storedEmail = useOnboardingStore((state) => state.answers.email);
   const storedName = useOnboardingStore((state) => state.answers.firstName);
   const storedCode = useOnboardingStore((state) => state.referralCode);
@@ -68,44 +70,41 @@ export default function EmailScreen() {
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <Text style={styles.title}>Sauvegarde tes résultats</Text>
-        <Text style={styles.subtitle}>
-          Où on t'envoie ton bilan complet ? Tu retrouveras ton plan et ta
-          projection à tout moment.
-        </Text>
+        <Text style={styles.title}>{t('onboarding.emailTitle')}</Text>
+        <Text style={styles.subtitle}>{t('onboarding.emailSubtitle')}</Text>
 
         <TextInput
           style={[styles.input, webNoOutline]}
           value={firstName}
           onChangeText={setFirstName}
-          placeholder="Ton prénom"
+          placeholder={t('onboarding.firstNamePlaceholder')}
           placeholderTextColor={color.textMuted}
           selectionColor={color.accent}
           autoCapitalize="words"
           autoCorrect={false}
           autoComplete="given-name"
           maxLength={30}
-          accessibilityLabel="Prénom"
+          accessibilityLabel={t('onboarding.firstNameA11y')}
         />
 
         <TextInput
           style={[styles.input, styles.inputEmail, webNoOutline]}
           value={email}
           onChangeText={setEmail}
-          placeholder="ton@email.com"
+          placeholder={t('onboarding.emailPlaceholder')}
           placeholderTextColor={color.textMuted}
           selectionColor={color.accent}
           keyboardType="email-address"
           autoCapitalize="none"
           autoCorrect={false}
           autoComplete="email"
-          accessibilityLabel="Adresse email"
+          accessibilityLabel={t('onboarding.emailA11y')}
         />
 
         {/* Code de parrainage (optionnel) — replié tant que non utilisé. */}
         {codeOpen ? (
           <View style={styles.referralBlock}>
-            <Text style={styles.referralLabel}>Code de parrainage (optionnel)</Text>
+            <Text style={styles.referralLabel}>{t('onboarding.referralLabel')}</Text>
             <TextInput
               style={[styles.referralInput, webNoOutline]}
               value={rawCode}
@@ -113,18 +112,16 @@ export default function EmailScreen() {
                 setRawCode(text.toUpperCase());
                 setCodeState('idle');
               }}
-              placeholder="EX. JULES23"
+              placeholder={t('onboarding.referralPlaceholder')}
               placeholderTextColor={color.textMuted}
               selectionColor={color.accent}
               autoCapitalize="characters"
               autoCorrect={false}
               maxLength={24}
-              accessibilityLabel="Code de parrainage"
+              accessibilityLabel={t('onboarding.referralA11y')}
             />
             {codeState === 'invalid' ? (
-              <Text style={styles.referralHint}>
-                Code inconnu — corrige-le, ou continue sans.
-              </Text>
+              <Text style={styles.referralHint}>{t('onboarding.referralInvalid')}</Text>
             ) : null}
           </View>
         ) : (
@@ -134,13 +131,17 @@ export default function EmailScreen() {
             style={styles.referralToggle}
           >
             <Ionicons name="gift-outline" size={16} color={color.textSecond} />
-            <Text style={styles.referralToggleLabel}>J'ai un code de parrainage</Text>
+            <Text style={styles.referralToggleLabel}>{t('onboarding.referralToggle')}</Text>
           </Pressable>
         )}
 
         <View style={styles.footer}>
           <PrimaryButton
-            label={codeState === 'checking' ? 'Vérification…' : 'Recevoir mon bilan'}
+            label={
+              codeState === 'checking'
+                ? t('onboarding.emailChecking')
+                : t('onboarding.emailCta')
+            }
             disabled={!emailValid || codeState === 'checking'}
             onPress={() => void finish(true)}
           />
@@ -150,7 +151,7 @@ export default function EmailScreen() {
             accessibilityRole="button"
             style={styles.skip}
           >
-            <Text style={styles.skipLabel}>Passer</Text>
+            <Text style={styles.skipLabel}>{t('common.skip')}</Text>
           </Pressable>
         </View>
       </KeyboardAvoidingView>

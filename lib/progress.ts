@@ -10,6 +10,7 @@
  * Honnêteté : les rangs et badges récompensent la RÉGULARITÉ et la
  * posture — jamais une promesse de centimètres.
  */
+import type { Localized } from './i18n';
 
 // ── Paramètres (v1 simple — faciles à ajuster) ──────────────────────────
 export const SESSION_XP = 100;
@@ -48,35 +49,71 @@ export const INITIAL_PROGRESS: ProgressState = {
 // ── Badges (jalons v1) ──────────────────────────────────────────────────
 export type Badge = {
   id: string;
-  titre: string;
-  description: string;
+  titre: Localized;
+  description: Localized;
   kind: 'streak' | 'sessions';
   seuil: number;
 };
 
 export const BADGES: Badge[] = [
-  { id: 'premiere-seance', titre: 'Première séance', description: 'Ta toute première séance complétée.', kind: 'sessions', seuil: 1 },
-  { id: 'streak-7', titre: 'Semaine complète', description: '7 jours d’affilée.', kind: 'streak', seuil: 7 },
-  { id: 'streak-30', titre: 'Un mois sans lâcher', description: '30 jours d’affilée.', kind: 'streak', seuil: 30 },
-  { id: 'streak-100', titre: 'Centurion du maintien', description: '100 jours d’affilée.', kind: 'streak', seuil: 100 },
-  { id: 'seances-30', titre: '30 séances', description: '30 séances complétées au total.', kind: 'sessions', seuil: 30 },
-  { id: 'seances-100', titre: '100 séances', description: '100 séances complétées au total.', kind: 'sessions', seuil: 100 },
+  {
+    id: 'premiere-seance',
+    titre: { fr: 'Première séance', en: 'First session' },
+    description: { fr: 'Ta toute première séance complétée.', en: 'Your very first completed session.' },
+    kind: 'sessions',
+    seuil: 1,
+  },
+  {
+    id: 'streak-7',
+    titre: { fr: 'Semaine complète', en: 'Full week' },
+    description: { fr: '7 jours d’affilée.', en: '7 days in a row.' },
+    kind: 'streak',
+    seuil: 7,
+  },
+  {
+    id: 'streak-30',
+    titre: { fr: 'Un mois sans lâcher', en: 'A month without letting go' },
+    description: { fr: '30 jours d’affilée.', en: '30 days in a row.' },
+    kind: 'streak',
+    seuil: 30,
+  },
+  {
+    id: 'streak-100',
+    titre: { fr: 'Centurion du maintien', en: 'Posture centurion' },
+    description: { fr: '100 jours d’affilée.', en: '100 days in a row.' },
+    kind: 'streak',
+    seuil: 100,
+  },
+  {
+    id: 'seances-30',
+    titre: { fr: '30 séances', en: '30 sessions' },
+    description: { fr: '30 séances complétées au total.', en: '30 sessions completed in total.' },
+    kind: 'sessions',
+    seuil: 30,
+  },
+  {
+    id: 'seances-100',
+    titre: { fr: '100 séances', en: '100 sessions' },
+    description: { fr: '100 séances complétées au total.', en: '100 sessions completed in total.' },
+    kind: 'sessions',
+    seuil: 100,
+  },
 ];
 
 // ── Rangs nommés (sobres, univers posture — jamais de cm promis) ────────
-export const RANKS = [
-  'Départ redressé', // niveau 1
-  'Régulier',
-  'Posture stable',
-  'Bien ancré',
-  'Discipliné',
-  'Posture solide',
-  'Port assuré',
-  'Colonne d’acier',
-  'Maître du maintien', // niveau 9 et au-delà
-] as const;
+export const RANKS: readonly Localized[] = [
+  { fr: 'Départ redressé', en: 'Standing start' }, // niveau 1
+  { fr: 'Régulier', en: 'Consistent' },
+  { fr: 'Posture stable', en: 'Steady posture' },
+  { fr: 'Bien ancré', en: 'Well grounded' },
+  { fr: 'Discipliné', en: 'Disciplined' },
+  { fr: 'Posture solide', en: 'Solid posture' },
+  { fr: 'Port assuré', en: 'Confident bearing' },
+  { fr: 'Colonne d’acier', en: 'Spine of steel' },
+  { fr: 'Maître du maintien', en: 'Master of posture' }, // niveau 9 et au-delà
+];
 
-export function rankForLevel(level: number): string {
+export function rankForLevel(level: number): Localized {
   return RANKS[Math.max(0, Math.min(RANKS.length - 1, level - 1))];
 }
 
@@ -94,7 +131,7 @@ export function levelForXp(xp: number): number {
 /** Avancement vers le prochain niveau, pour la barre verticale. */
 export function levelProgress(xp: number): {
   level: number;
-  rank: string;
+  rank: Localized;
   /** XP gagné depuis le niveau courant. */
   current: number;
   /** XP nécessaire entre le niveau courant et le suivant. */
@@ -164,7 +201,7 @@ export type ProgressEvent =
   | { kind: 'streak'; streak: number; isNewDay: boolean }
   | { kind: 'freeze_used'; count: number }
   | { kind: 'freeze_earned' }
-  | { kind: 'level_up'; level: number; rank: string }
+  | { kind: 'level_up'; level: number; rank: Localized }
   | { kind: 'badge_unlocked'; badge: Badge };
 
 // ── Le cœur : une séance complétée ──────────────────────────────────────

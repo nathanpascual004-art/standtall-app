@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -22,6 +23,7 @@ const MAX_KG = 250;
 /** Nutrition — poids actuel (kg) pour Mifflin-St Jeor + poids cible optionnel. */
 export default function NutriPoidsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const intention = useOnboardingStore((state) => state.answers.intention);
   const stored = useOnboardingStore((state) => state.answers.poidsKg);
   const storedCible = useOnboardingStore((state) => state.answers.poidsCibleKg);
@@ -54,7 +56,7 @@ export default function NutriPoidsScreen() {
           total={questionCount(intention)}
         />
 
-        <Text style={styles.title}>Ton poids actuel ?</Text>
+        <Text style={styles.title}>{t('onboarding.weightTitle')}</Text>
 
         <View style={styles.inputRow}>
           <TextInput
@@ -67,17 +69,17 @@ export default function NutriPoidsScreen() {
             selectionColor={color.accent}
             maxLength={3}
             autoFocus
-            accessibilityLabel="Poids actuel"
+            accessibilityLabel={t('onboarding.weightA11y')}
           />
           <Text style={styles.unit}>kg</Text>
         </View>
         {raw.length >= 3 && !isValid ? (
           <Text style={styles.hint}>
-            Entre un poids entre {MIN_KG} et {MAX_KG} kg.
+            {t('onboarding.weightHint', { min: MIN_KG, max: MAX_KG })}
           </Text>
         ) : null}
 
-        <Text style={styles.cibleLabel}>Poids cible (optionnel)</Text>
+        <Text style={styles.cibleLabel}>{t('onboarding.targetWeightLabel')}</Text>
         <View style={styles.inputRow}>
           <TextInput
             style={[styles.input, webNoOutline]}
@@ -88,16 +90,18 @@ export default function NutriPoidsScreen() {
             placeholderTextColor={color.textMuted}
             selectionColor={color.accent}
             maxLength={3}
-            accessibilityLabel="Poids cible optionnel"
+            accessibilityLabel={t('onboarding.targetWeightA11y')}
           />
           <Text style={styles.unit}>kg</Text>
         </View>
-        <Text style={styles.cibleHint}>
-          Juste pour situer ton cap — aucun rythme ni résultat promis.
-        </Text>
+        <Text style={styles.cibleHint}>{t('onboarding.targetWeightHint')}</Text>
 
         <View style={styles.footer}>
-          <PrimaryButton label="Continuer" disabled={!isValid} onPress={handleContinue} />
+          <PrimaryButton
+            label={t('common.continue')}
+            disabled={!isValid}
+            onPress={handleContinue}
+          />
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

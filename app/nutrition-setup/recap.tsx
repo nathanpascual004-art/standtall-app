@@ -1,4 +1,5 @@
 import { Redirect, useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -30,6 +31,7 @@ const cascade = (index: number) =>
 /** Setup nutrition 4/4 — récap des cibles calculées. */
 export default function NutritionRecapScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const answers = useOnboardingStore((state) => state.answers);
   const draft = useOnboardingStore((state) => state.nutritionDraft);
   const setNutritionProfile = useOnboardingStore((state) => state.setNutritionProfile);
@@ -62,26 +64,38 @@ export default function NutritionRecapScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <OnboardingProgress step={4} total={4} />
-      <Text style={styles.title}>Tes objectifs nutrition</Text>
+      <Text style={styles.title}>{t('nutrition.setupRecapTitle')}</Text>
 
       <Animated.View entering={cascade(0)}>
         <StatCard
-          label="Calories / jour"
+          label={t('nutrition.setupCaloriesPerDay')}
           value={`${targets.calories} kcal`}
           style={styles.caloriesCard}
         />
       </Animated.View>
 
       <Animated.View entering={cascade(1)} style={styles.macroRow}>
-        <StatCard label="Protéines" value={`${targets.proteinesG} g`} style={styles.flex} />
-        <StatCard label="Glucides" value={`${targets.glucidesG} g`} style={styles.flex} />
-        <StatCard label="Lipides" value={`${targets.lipidesG} g`} style={styles.flex} />
+        <StatCard
+          label={t('nutrition.protein')}
+          value={`${targets.proteinesG} g`}
+          style={styles.flex}
+        />
+        <StatCard
+          label={t('nutrition.carbs')}
+          value={`${targets.glucidesG} g`}
+          style={styles.flex}
+        />
+        <StatCard
+          label={t('nutrition.fats')}
+          value={`${targets.lipidesG} g`}
+          style={styles.flex}
+        />
       </Animated.View>
 
-      <Text style={styles.note}>Estimation, à ajuster selon les résultats réels.</Text>
+      <Text style={styles.note}>{t('nutrition.setupEstimateNote')}</Text>
 
       <View style={styles.footer}>
-        <PrimaryButton label="C'est parti" onPress={handleStart} />
+        <PrimaryButton label={t('nutrition.setupStartCta')} onPress={handleStart} />
       </View>
     </SafeAreaView>
   );

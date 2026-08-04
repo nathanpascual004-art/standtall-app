@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,6 +12,7 @@ import { PressableScale } from '@/components/PressableScale';
 import { ProgressBar } from '@/components/ProgressBar';
 import { SectionLabel } from '@/components/SectionLabel';
 import { HABIT_XP, HABITS } from '@/lib/habits';
+import { useAppLanguage } from '@/lib/i18n';
 import { displayStreak, levelProgress, rankForLevel } from '@/lib/progress';
 import { todayKey, useOnboardingStore } from '@/lib/store';
 import { borderWidth, color, duration, radius, space, staggerDelay, type } from '@/theme/tokens';
@@ -59,6 +61,8 @@ function HexBadge({ level, active }: { level: number; active: boolean }) {
 /** Onglet Progrès — série, niveau/XP, habitudes du jour. */
 export default function ProgresScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
+  const lang = useAppLanguage();
   const progress = useOnboardingStore((state) => state.progress);
   const habits = useOnboardingStore((state) => state.habits);
   const toggleHabit = useOnboardingStore((state) => state.toggleHabit);
@@ -78,11 +82,11 @@ export default function ProgresScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>Progrès</Text>
+          <Text style={styles.title}>{t('common.tabProgress')}</Text>
           <PressableScale
             onPress={() => router.push('/recompenses')}
             accessibilityRole="button"
-            accessibilityLabel="Récompenses"
+            accessibilityLabel={t('progress.rewardsA11y')}
             hitSlop={8}
             style={styles.iconButton}
           >
@@ -94,7 +98,7 @@ export default function ProgresScreen() {
         <Animated.View entering={cascade(0)}>
           <Card style={styles.streakCard}>
             <View style={styles.streakText}>
-              <SectionLabel>Ta série</SectionLabel>
+              <SectionLabel>{t('progress.yourStreak')}</SectionLabel>
               <View style={styles.streakRow}>
                 <Ionicons
                   name="flame"
@@ -102,10 +106,15 @@ export default function ProgresScreen() {
                   color={streak > 0 ? color.accent : color.textMuted}
                 />
                 <Text style={styles.streakValue}>{streak}</Text>
-                <Text style={styles.streakUnit}>jour{streak > 1 ? 's' : ''}</Text>
+                <Text style={styles.streakUnit}>
+                  {streak > 1 ? t('common.days') : t('common.day')}
+                </Text>
               </View>
               <Text style={styles.streakRecord}>
-                Meilleur record : {progress.bestStreak} jour{progress.bestStreak > 1 ? 's' : ''}
+                {t('progress.bestRecord', {
+                  count: progress.bestStreak,
+                  unit: progress.bestStreak > 1 ? t('common.days') : t('common.day'),
+                })}
               </Text>
             </View>
             <Mascot state={streak > 0 ? 'upright' : 'encourage'} size={MASCOT_SIZE} />
@@ -117,20 +126,22 @@ export default function ProgresScreen() {
           <PressableScale
             onPress={() => router.push('/recompenses')}
             accessibilityRole="button"
-            accessibilityLabel="Niveau actuel — voir les récompenses"
+            accessibilityLabel={t('progress.currentLevelA11y')}
           >
             <Card style={styles.levelCard}>
-              <SectionLabel>Niveau actuel</SectionLabel>
+              <SectionLabel>{t('progress.currentLevel')}</SectionLabel>
               <View style={styles.levelRow}>
                 <View style={styles.levelText}>
                   <Text style={styles.levelName}>
-                    Niveau {level.level} · {level.rank}
+                    {t('common.levelN', { level: level.level })} · {level.rank[lang]}
                   </Text>
                   <Text style={styles.levelXp}>
                     {level.current} / {level.needed} XP
                   </Text>
                   <ProgressBar progress={level.ratio} style={styles.levelBar} />
-                  <Text style={styles.levelNext}>Prochain niveau : {nextRank}</Text>
+                  <Text style={styles.levelNext}>
+                    {t('progress.nextLevel', { rank: nextRank[lang] })}
+                  </Text>
                 </View>
                 <View style={styles.hexRow}>
                   <HexBadge level={level.level} active />
@@ -144,9 +155,9 @@ export default function ProgresScreen() {
         {/* Habitudes du jour. */}
         <Animated.View entering={cascade(2)}>
           <View style={styles.habitsHeader}>
-            <SectionLabel>Habitudes du jour</SectionLabel>
+            <SectionLabel>{t('progress.todayHabits')}</SectionLabel>
             <Text style={styles.habitsCount}>
-              {checkedCount}/{HABITS.length} complétées
+              {t('progress.habitsCount', { done: checkedCount, total: HABITS.length })}
             </Text>
           </View>
           <View style={styles.list}>
@@ -159,7 +170,7 @@ export default function ProgresScreen() {
                   haptic="selection"
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: isChecked }}
-                  accessibilityLabel={`Habitude ${habit.titre}`}
+                  accessibilityLabel={t('progress.habitA11y', { title: habit.titre[lang] })}
                 >
                   <Card style={[styles.habit, isChecked && styles.habitChecked]}>
                     <Ionicons
@@ -171,13 +182,13 @@ export default function ProgresScreen() {
                       <Text
                         style={[styles.habitTitle, isChecked && styles.habitTitleChecked]}
                       >
-                        {habit.titre}
+                        {habit.titre[lang]}
                       </Text>
-                      <Text style={styles.habitDescription}>{habit.description}</Text>
+                      <Text style={styles.habitDescription}>{habit.description[lang]}</Text>
                     </View>
                     {isChecked ? (
                       <View style={styles.habitDone}>
-                        <Text style={styles.habitDoneLabel}>Validée</Text>
+                        <Text style={styles.habitDoneLabel}>{t('progress.habitDone')}</Text>
                       </View>
                     ) : null}
                     <View style={[styles.check, isChecked && styles.checkChecked]}>
@@ -192,10 +203,7 @@ export default function ProgresScreen() {
           </View>
         </Animated.View>
 
-        <Text style={styles.footnote}>
-          Chaque habitude cochée rapporte +{HABIT_XP} XP. La série, elle, avance
-          avec tes séances — la régularité fait le redressement.
-        </Text>
+        <Text style={styles.footnote}>{t('progress.footnote', { xp: HABIT_XP })}</Text>
       </ScrollView>
     </SafeAreaView>
   );

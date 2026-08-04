@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,11 +8,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '@/components/Card';
 import { PressableScale } from '@/components/PressableScale';
 import { SectionLabel } from '@/components/SectionLabel';
+import { useAppLanguage } from '@/lib/i18n';
 import {
   GOAL_SUBTITLES,
   MEAL_IDEAS,
   MEAL_IDEAS_DISCLAIMER,
   MEAL_MOMENTS,
+  MOMENT_LABELS,
 } from '@/lib/meal-ideas';
 import { useOnboardingStore, type NutriIntent } from '@/lib/store';
 import { color, duration, radius, space, staggerDelay, type } from '@/theme/tokens';
@@ -37,6 +40,8 @@ function resolveGoal(): NutriIntent {
 /** Idées de repas curées par objectif — v1 statique, honnête. */
 export default function IdeesRepasScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
+  const lang = useAppLanguage();
   const setMealIdeaDraft = useOnboardingStore((state) => state.setMealIdeaDraft);
   const goal = resolveGoal();
   const ideas = MEAL_IDEAS[goal];
@@ -47,13 +52,13 @@ export default function IdeesRepasScreen() {
         <PressableScale
           onPress={() => router.back()}
           accessibilityRole="button"
-          accessibilityLabel="Retour"
+          accessibilityLabel={t('common.back')}
           hitSlop={12}
           style={styles.iconButton}
         >
           <Ionicons name="chevron-back" size={20} color={color.textMuted} />
         </PressableScale>
-        <Text style={styles.title}>Idées de repas</Text>
+        <Text style={styles.title}>{t('nutrition.mealIdeasTitle')}</Text>
         <View style={styles.iconButton} />
       </View>
 
@@ -62,19 +67,20 @@ export default function IdeesRepasScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.subtitle}>{GOAL_SUBTITLES[goal]}</Text>
+        <Text style={styles.subtitle}>{GOAL_SUBTITLES[goal][lang]}</Text>
 
         {MEAL_MOMENTS.map((moment, momentIndex) => (
           <Animated.View key={moment} entering={cascade(momentIndex)}>
-            <SectionLabel style={styles.momentLabel}>{moment}</SectionLabel>
+            <SectionLabel style={styles.momentLabel}>{MOMENT_LABELS[moment][lang]}</SectionLabel>
             <View style={styles.list}>
               {ideas[moment].map((idea) => (
                 <PressableScale
-                  key={idea.nom}
+                  key={idea.nom.fr}
                   onPress={() => {
                     // Bonus : pré-remplit « Ajouter manuellement » côté Nutrition.
+                    // Le nom est résolu ICI : le journal stocke une chaîne.
                     setMealIdeaDraft({
-                      nom: idea.nom,
+                      nom: idea.nom[lang],
                       calories: idea.kcal,
                       proteinesG: idea.proteinesG,
                       glucidesG: idea.glucidesG,
@@ -83,17 +89,17 @@ export default function IdeesRepasScreen() {
                     router.back();
                   }}
                   accessibilityRole="button"
-                  accessibilityLabel={`Idée ${idea.nom}`}
+                  accessibilityLabel={t('nutrition.ideaA11y', { name: idea.nom[lang] })}
                 >
                   <Card style={styles.idea}>
                     <View style={styles.ideaHead}>
-                      <Text style={styles.ideaName}>{idea.nom}</Text>
+                      <Text style={styles.ideaName}>{idea.nom[lang]}</Text>
                       <Text style={styles.ideaKcal}>{idea.kcal} kcal</Text>
                     </View>
-                    <Text style={styles.ideaDescription}>{idea.description}</Text>
+                    <Text style={styles.ideaDescription}>{idea.description[lang]}</Text>
                     <View style={styles.ideaWhy}>
                       <Ionicons name="flash-outline" size={13} color={color.accent} />
-                      <Text style={styles.ideaWhyText}>{idea.pourquoi}</Text>
+                      <Text style={styles.ideaWhyText}>{idea.pourquoi[lang]}</Text>
                     </View>
                   </Card>
                 </PressableScale>
@@ -102,7 +108,7 @@ export default function IdeesRepasScreen() {
           </Animated.View>
         ))}
 
-        <Text style={styles.disclaimer}>{MEAL_IDEAS_DISCLAIMER}</Text>
+        <Text style={styles.disclaimer}>{MEAL_IDEAS_DISCLAIMER[lang]}</Text>
       </ScrollView>
     </SafeAreaView>
   );

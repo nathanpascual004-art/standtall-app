@@ -2,6 +2,8 @@ import { Image, type ImageSource } from 'expo-image';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, Line, Path, Text as SvgText } from 'react-native-svg';
 
+import { useTranslation } from 'react-i18next';
+
 import { color } from '@/theme/tokens';
 
 /**
@@ -44,6 +46,7 @@ function slouchFor(state: MascotState | undefined, score: number | undefined): n
  * (il « reprend sa taille » — il ne grandit pas).
  */
 export function Mascot({ state, score, size = 96 }: MascotProps) {
+  const { t } = useTranslation();
   const resolved: MascotState =
     state ?? (slouchFor(undefined, score) > 0.55 ? 'slouched' : slouchFor(undefined, score) > 0.3 ? 'neutral' : 'upright');
 
@@ -65,7 +68,7 @@ export function Mascot({ state, score, size = 96 }: MascotProps) {
   const armLift = celebrate ? -26 : encourage ? -10 : 6 + slouch * 6;
 
   return (
-    <View style={{ width: size, height: size }} accessibilityLabel={`Mascotte (${resolved})`}>
+    <View style={{ width: size, height: size }} accessibilityLabel={t('common.mascotA11y')}>
       <Svg width={size} height={size} viewBox="0 0 100 100">
         {/* Dos / corps (survêt) : courbe hanche → épaules. */}
         <Path

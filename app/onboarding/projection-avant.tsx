@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,6 +13,7 @@ import { color, duration, space, type } from '@/theme/tokens';
 /** Écran 6 — ton personnage aujourd'hui, à SA taille, contre la toise. */
 export default function ProjectionAvantScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const answers = useOnboardingStore((state) => state.answers);
   const result = computePostureResult(answers);
   const heightCm = answers.heightCm ?? 175;
@@ -33,15 +35,13 @@ export default function ProjectionAvantScreen() {
           ratio={0}
         />
 
-        <Text style={styles.copy}>Voilà où tu te tiens aujourd'hui.</Text>
-        <Text style={styles.sub}>
-          Assis, écrans, tensions : ta posture te vole des centimètres de présence.
-        </Text>
+        <Text style={styles.copy}>{t('onboarding.projectionBeforeTitle')}</Text>
+        <Text style={styles.sub}>{t('onboarding.projectionBeforeSub')}</Text>
       </View>
 
       <View style={styles.footer}>
         <PrimaryButton
-          label="Voir ma projection"
+          label={t('onboarding.projectionCta')}
           onPress={() => router.push('/onboarding/projection')}
         />
       </View>

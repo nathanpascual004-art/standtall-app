@@ -17,6 +17,7 @@
  */
 import { Platform } from 'react-native';
 
+import i18n from './i18n';
 import { displayStreak, isActiveToday, type ProgressState } from './progress';
 
 /** Heure locale du rappel (fin de journée, avant la rupture). */
@@ -108,8 +109,12 @@ export async function scheduleStreakReminder(
 
     await notifications.scheduleNotificationAsync({
       content: {
-        title: `Ta série de ${streak} jour${streak > 1 ? 's' : ''} va se casser 🔥`,
-        body: '5 min suffisent pour la garder.',
+        // Traduit au moment de la planification, dans la langue active.
+        title: i18n.t(
+          streak > 1 ? 'common.streakReminderTitlePlural' : 'common.streakReminderTitle',
+          { count: streak },
+        ),
+        body: i18n.t('common.streakReminderBody'),
       },
       trigger: {
         type: notifications.SchedulableTriggerInputTypes.DATE,

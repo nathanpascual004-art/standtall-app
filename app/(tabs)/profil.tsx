@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Linking, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,6 +12,7 @@ import { PressableScale } from '@/components/PressableScale';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { SectionLabel } from '@/components/SectionLabel';
 import { PRIVACY_URL, SUPPORT_EMAIL, TERMS_URL } from '@/lib/config';
+import i18n, { useAppLanguage, type AppLanguage } from '@/lib/i18n';
 import type { ActivityLevel, NutritionGoal } from '@/lib/nutrition';
 import { levelProgress } from '@/lib/progress';
 import { restorePurchases, useEntitlement } from '@/lib/purchases';
@@ -25,17 +27,23 @@ import {
   type,
 } from '@/theme/tokens';
 
-const GOAL_LABELS: Record<NutritionGoal, string> = {
-  masse: 'Prise de masse',
-  seche: 'Sèche',
-  maintien: 'Maintien',
+const GOAL_KEYS: Record<NutritionGoal, string> = {
+  masse: 'profile.goalMass',
+  seche: 'profile.goalCut',
+  maintien: 'profile.goalMaintain',
 };
 
-const ACTIVITY_LABELS: Record<ActivityLevel, string> = {
-  sedentaire: 'Sédentaire',
-  leger: 'Léger',
-  modere: 'Modéré',
-  'tres-actif': 'Très actif',
+const ACTIVITY_KEYS: Record<ActivityLevel, string> = {
+  sedentaire: 'profile.activitySedentary',
+  leger: 'profile.activityLight',
+  modere: 'profile.activityModerate',
+  'tres-actif': 'profile.activityVeryActive',
+};
+
+/** Noms propres des langues — jamais traduits. */
+const LANGUAGE_NAMES: Record<AppLanguage, string> = {
+  fr: 'Français',
+  en: 'English',
 };
 
 const SUBSCRIPTIONS_URL = Platform.select({
@@ -87,10 +95,12 @@ function Row({
 /** Onglet Profil — infos, abonnement, légal, données. */
 export default function ProfilScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const answers = useOnboardingStore((state) => state.answers);
   const profile = useOnboardingStore((state) => state.nutritionProfile);
   const setNutritionDraft = useOnboardingStore((state) => state.setNutritionDraft);
   const reset = useOnboardingStore((state) => state.reset);
+  const setLanguage = useOnboardingStore((state) => state.setLanguage);
   const progress = useOnboardingStore((state) => state.progress);
   const level = levelProgress(progress.xp);
   const firstName = answers.firstName?.trim();
@@ -99,6 +109,15 @@ export default function ProfilScreen() {
   const [restoreFeedback, setRestoreFeedback] = useState<string | null>(null);
   const [restoring, setRestoring] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [langOpen, setLangOpen] = useState(false);
+  const activeLang = useAppLanguage();
+
+  /** Choix manuel : persiste + bascule l'UI en direct, sans redémarrage. */
+  const chooseLanguage = (lang: AppLanguage) => {
+    setLanguage(lang);
+    void i18n.changeLanguage(lang);
+    setLangOpen(false);
+  };
 
   const tailleCm = profile?.tailleCm ?? answers.heightCm;
   const version = Constants.expoConfig?.version ?? '1.0.0';
@@ -125,7 +144,7 @@ export default function ProfilScreen() {
     setRestoreFeedback(null);
     const ok = await restorePurchases();
     setRestoring(false);
-    setRestoreFeedback(ok ? 'Achats restaurés.' : 'Aucun achat à restaurer.');
+    setRestoreFeedback(ok ? t('profile.restored') : t('paywall.restoreError'));
   };
 
   const handleReset = () => {
@@ -148,11 +167,11 @@ export default function ProfilScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerRow}>
-          <Text style={styles.title}>Profil</Text>
+          <Text style={styles.title}>{t('common.tabProfile')}</Text>
           <PressableScale
             onPress={handleEditNutrition}
             accessibilityRole="button"
-            accessibilityLabel="Réglages"
+            accessibilityLabel={t('program.settingsA11y')}
             hitSlop={8}
             style={styles.iconButton}
           >
@@ -165,7 +184,7 @@ export default function ProfilScreen() {
           <PressableScale
             onPress={() => router.push('/recompenses')}
             accessibilityRole="button"
-            accessibilityLabel="Mon niveau et mes récompenses"
+            accessibilityLabel={t('profile.identityA11y')}
           >
             <Card style={styles.identityCard}>
               <View style={styles.avatar}>
@@ -174,9 +193,11 @@ export default function ProfilScreen() {
                 </Text>
               </View>
               <View style={styles.identityText}>
-                <Text style={styles.identityName}>{firstName || 'Toi'}</Text>
+                <Text style={styles.identityName}>
+                  {firstName || t('profile.defaultName')}
+                </Text>
                 <Text style={styles.identityLevel}>
-                  Niveau {level.level} · {level.rank}
+                  {t('common.levelN', { level: level.level })} · {level.rank[activeLang]}
                 </Text>
               </View>
               {chevron}
@@ -185,37 +206,78 @@ export default function ProfilScreen() {
         </Animated.View>
 
         <Animated.View entering={cascade(1)}>
-          <SectionLabel style={styles.sectionLabel}>Mes infos</SectionLabel>
+          <SectionLabel style={styles.sectionLabel}>{t('profile.myInfo')}</SectionLabel>
           <Card style={styles.sectionCard}>
-            <Row first label="Taille" value={tailleCm ? `${tailleCm} cm` : '—'} />
             <Row
-              label="Objectif nutrition"
-              value={profile ? GOAL_LABELS[profile.goal] : '—'}
+              first
+              label={t('profile.height')}
+              value={tailleCm ? `${tailleCm} cm` : '—'}
             />
             <Row
-              label="Niveau d'activité"
-              value={profile ? ACTIVITY_LABELS[profile.activite] : '—'}
+              label={t('profile.nutritionGoal')}
+              value={profile ? t(GOAL_KEYS[profile.goal]) : '—'}
             />
             <Row
-              label="Modifier mes infos"
+              label={t('profile.activityLevel')}
+              value={profile ? t(ACTIVITY_KEYS[profile.activite]) : '—'}
+            />
+            <Row
+              label={t('profile.editInfo')}
               onPress={handleEditNutrition}
               icon={chevron}
               labelColor={color.accent}
             />
           </Card>
-        </Animated.View>
 
-        <Animated.View entering={cascade(2)}>
-          <SectionLabel style={styles.sectionLabel}>Progression</SectionLabel>
+          {/* Langue — sélecteur FR/EN, bascule en direct. */}
+          <SectionLabel style={styles.sectionLabel}>
+            {t('profile.preferences')}
+          </SectionLabel>
           <Card style={styles.sectionCard}>
             <Row
               first
-              label="Record de série"
-              value={`${progress.bestStreak} jour${progress.bestStreak > 1 ? 's' : ''}`}
+              label={t('profile.language')}
+              value={LANGUAGE_NAMES[activeLang]}
+              onPress={() => setLangOpen((open) => !open)}
+              icon={
+                <Ionicons
+                  name={langOpen ? 'chevron-down' : 'chevron-forward'}
+                  size={16}
+                  color={color.textMuted}
+                />
+              }
             />
-            <Row label="Séances complétées" value={String(progress.totalSessions)} />
+            {langOpen
+              ? (Object.keys(LANGUAGE_NAMES) as AppLanguage[]).map((lang) => (
+                  <Row
+                    key={lang}
+                    label={LANGUAGE_NAMES[lang]}
+                    onPress={() => chooseLanguage(lang)}
+                    labelColor={lang === activeLang ? color.accent : undefined}
+                    icon={
+                      lang === activeLang ? (
+                        <Ionicons name="checkmark" size={16} color={color.accent} />
+                      ) : undefined
+                    }
+                  />
+                ))
+              : null}
+          </Card>
+        </Animated.View>
+
+        <Animated.View entering={cascade(2)}>
+          <SectionLabel style={styles.sectionLabel}>
+            {t('profile.progression')}
+          </SectionLabel>
+          <Card style={styles.sectionCard}>
             <Row
-              label="Consulter mes statistiques"
+              first
+              label={t('profile.bestStreak')}
+              value={`${progress.bestStreak} ${progress.bestStreak > 1 ? t('common.days') : t('common.day')}`}
+            />
+            <Row label={t('profile.sessionsDone')} value={String(progress.totalSessions)} />
+            <Row
+              label={t('profile.seeStats')}
               onPress={() => router.push('/recompenses')}
               icon={chevron}
               labelColor={color.accent}
@@ -224,29 +286,31 @@ export default function ProfilScreen() {
         </Animated.View>
 
         <Animated.View entering={cascade(2)}>
-          <SectionLabel style={styles.sectionLabel}>Abonnement</SectionLabel>
+          <SectionLabel style={styles.sectionLabel}>
+            {t('profile.subscription')}
+          </SectionLabel>
           <Card style={styles.sectionCard}>
             <Row
               first
-              label="Statut"
-              value={isPro ? 'Premium' : 'Version gratuite'}
+              label={t('profile.status')}
+              value={isPro ? t('profile.premium') : t('profile.freeVersion')}
             />
             {isPro ? (
               <Row
-                label="Gérer mon abonnement"
+                label={t('profile.manageSubscription')}
                 onPress={() => openUrl(SUBSCRIPTIONS_URL)}
                 icon={external}
               />
             ) : (
               <Row
-                label="Découvrir Premium"
+                label={t('profile.discoverPremium')}
                 onPress={() => router.push('/paywall')}
                 icon={chevron}
                 labelColor={color.accent}
               />
             )}
             <Row
-              label={restoring ? 'Restauration…' : 'Restaurer mes achats'}
+              label={restoring ? t('profile.restoring') : t('paywall.restore')}
               onPress={restoring ? undefined : handleRestore}
               icon={chevron}
             />
@@ -257,21 +321,21 @@ export default function ProfilScreen() {
         </Animated.View>
 
         <Animated.View entering={cascade(3)}>
-          <SectionLabel style={styles.sectionLabel}>Légal</SectionLabel>
+          <SectionLabel style={styles.sectionLabel}>{t('profile.legal')}</SectionLabel>
           <Card style={styles.sectionCard}>
             <Row
               first
-              label="Conditions d'utilisation"
+              label={t('profile.termsOfUse')}
               onPress={() => openUrl(TERMS_URL)}
               icon={external}
             />
             <Row
-              label="Politique de confidentialité"
+              label={t('profile.privacyPolicy')}
               onPress={() => openUrl(PRIVACY_URL)}
               icon={external}
             />
             <Row
-              label="Nous contacter"
+              label={t('profile.contactUs')}
               onPress={() => openUrl(`mailto:${SUPPORT_EMAIL}`)}
               icon={external}
             />
@@ -279,14 +343,11 @@ export default function ProfilScreen() {
         </Animated.View>
 
         <Animated.View entering={cascade(4)}>
-          <SectionLabel style={styles.sectionLabel}>Données</SectionLabel>
+          <SectionLabel style={styles.sectionLabel}>{t('profile.data')}</SectionLabel>
           <Card style={styles.sectionCard}>
             {confirmReset ? (
               <View style={styles.confirmBlock}>
-                <Text style={styles.confirmText}>
-                  Toutes tes données locales (quiz, nutrition, séances) seront
-                  effacées. Cette action est définitive.
-                </Text>
+                <Text style={styles.confirmText}>{t('profile.resetConfirmText')}</Text>
                 <PressableScale
                   onPress={handleReset}
                   haptic="impact"
@@ -296,10 +357,10 @@ export default function ProfilScreen() {
                     pressed && styles.dangerButtonPressed,
                   ]}
                 >
-                  <Text style={styles.dangerButtonLabel}>Oui, tout effacer</Text>
+                  <Text style={styles.dangerButtonLabel}>{t('profile.resetConfirmCta')}</Text>
                 </PressableScale>
                 <PrimaryButton
-                  label="Annuler"
+                  label={t('common.cancel')}
                   variant="secondary"
                   onPress={() => setConfirmReset(false)}
                 />
@@ -307,7 +368,7 @@ export default function ProfilScreen() {
             ) : (
               <Row
                 first
-                label="Réinitialiser mes données"
+                label={t('profile.resetData')}
                 onPress={() => setConfirmReset(true)}
                 labelColor={color.danger}
                 icon={<Ionicons name="trash-outline" size={16} color={color.danger} />}
@@ -317,10 +378,7 @@ export default function ProfilScreen() {
         </Animated.View>
 
         <Text style={styles.version}>StandTall v{version}</Text>
-        <Text style={styles.disclaimer}>
-          StandTall fournit des estimations de posture et de nutrition à visée
-          informative, pas un avis médical.
-        </Text>
+        <Text style={styles.disclaimer}>{t('profile.disclaimer')}</Text>
       </ScrollView>
     </SafeAreaView>
   );

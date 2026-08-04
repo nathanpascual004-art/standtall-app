@@ -1,5 +1,6 @@
 import { useRouter, type Href } from 'expo-router';
 import { useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -46,6 +47,7 @@ export function QuizSingleSelectScreen<K extends AnswerKey>({
   nextHref,
 }: QuizSingleSelectScreenProps<K>) {
   const router = useRouter();
+  const { t } = useTranslation();
   const stored = useOnboardingStore((state) => state.answers[answerKey]);
   const setAnswer = useOnboardingStore((state) => state.setAnswer);
   const [selected, setSelected] = useState<QuizAnswers[K] | undefined>(stored);
@@ -84,7 +86,7 @@ export function QuizSingleSelectScreen<K extends AnswerKey>({
 
       <View style={styles.footer}>
         <PrimaryButton
-          label="Continuer"
+          label={t('common.continue')}
           disabled={selected === undefined}
           onPress={handleContinue}
         />
