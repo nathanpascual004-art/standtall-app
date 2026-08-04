@@ -26,8 +26,9 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "StandTall utilise tes photos pour analyser ta posture de profil.",
-          "cameraPermission": "StandTall utilise l'appareil photo pour prendre une photo de profil et analyser ta posture."
+          "photosPermission": "StandTall accède à tes photos pour analyser un repas depuis une image existante.",
+          "cameraPermission": "StandTall utilise l'appareil photo pour analyser tes repas.",
+          "microphonePermission": false
         }
       ],
       [
