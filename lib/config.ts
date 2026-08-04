@@ -1,11 +1,15 @@
 /**
  * Configuration à remplir avant la mise en production.
- * Tant que les clés gardent leur préfixe « REMPLACER », RevenueCat
- * n'est pas initialisé et le paywall affiche ses prix de fallback.
+ * Tant qu'une clé garde son préfixe « REMPLACER », RevenueCat n'est pas
+ * initialisé sur cette plateforme et le paywall affiche « … » à la place
+ * des prix (jamais de montant codé en dur).
  */
 
-/** Clé API RevenueCat iOS — dashboard RevenueCat → API keys (appl_...). */
-export const REVENUECAT_IOS_KEY = 'REMPLACER_appl_xxxxxxxx';
+/**
+ * Clé API RevenueCat iOS — clé PUBLIQUE (appl_...), conçue pour être
+ * embarquée côté client, comme la clé anon Supabase ci-dessous.
+ */
+export const REVENUECAT_IOS_KEY = 'appl_UmHqrpSkIYtvUdYevqsSXKsQYYy';
 
 /** Clé API RevenueCat Android — dashboard RevenueCat → API keys (goog_...). */
 export const REVENUECAT_ANDROID_KEY = 'REMPLACER_goog_xxxxxxxx';

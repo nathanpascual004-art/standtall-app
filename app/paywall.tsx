@@ -32,11 +32,12 @@ import {
   type,
 } from '@/theme/tokens';
 
-/** Prix de fallback (affichés si getOfferings échoue — l'écran n'est jamais vide). */
-const FALLBACK_ANNUAL_PRICE = '49,99 €';
-const FALLBACK_ANNUAL_PER_WEEK = '0,96 €';
-const FALLBACK_MONTHLY_PRICE = '9,99 €';
-const FALLBACK_WEEKLY_PRICE = '4,99 €';
+/**
+ * Placeholder affiché tant que l'offering RevenueCat n'est pas chargé
+ * (ou indisponible : web, clés absentes). JAMAIS de prix codé en dur —
+ * les montants viennent toujours des produits du store via RevenueCat.
+ */
+const PRICE_PLACEHOLDER = '…';
 
 /** Copies adaptées à l'intention choisie à l'onboarding (clés i18n). */
 const COPY_KEYS = {
@@ -154,11 +155,11 @@ export default function PaywallScreen() {
   const monthlyPkg = findPackage(offering, 'monthly');
   const weeklyPkg = findPackage(offering, 'weekly');
 
-  const annualPrice = annualPkg?.product.priceString ?? FALLBACK_ANNUAL_PRICE;
+  const annualPrice = annualPkg?.product.priceString ?? PRICE_PLACEHOLDER;
   const annualPerWeek =
-    annualPkg?.product.pricePerWeekString ?? FALLBACK_ANNUAL_PER_WEEK;
-  const monthlyPrice = monthlyPkg?.product.priceString ?? FALLBACK_MONTHLY_PRICE;
-  const weeklyPrice = weeklyPkg?.product.priceString ?? FALLBACK_WEEKLY_PRICE;
+    annualPkg?.product.pricePerWeekString ?? PRICE_PLACEHOLDER;
+  const monthlyPrice = monthlyPkg?.product.priceString ?? PRICE_PLACEHOLDER;
+  const weeklyPrice = weeklyPkg?.product.priceString ?? PRICE_PLACEHOLDER;
 
   const selectedPackage: Record<Plan, PurchasesPackage | null> = {
     annual: annualPkg,

@@ -3,7 +3,7 @@
  *
  * Les clés API se remplissent dans lib/config.ts. Tant qu'elles sont
  * absentes — ou sur web — le module reste inactif : getOfferings()
- * renvoie null (le paywall affiche alors ses prix de fallback) et,
+ * renvoie null (le paywall affiche « … » à la place des prix) et,
  * en développement uniquement, purchasePackage() simule un achat
  * réussi pour pouvoir tester le funnel complet sans store.
  */
@@ -19,7 +19,7 @@ import { REVENUECAT_ANDROID_KEY, REVENUECAT_IOS_KEY } from './config';
 import { useOnboardingStore } from './store';
 
 /** Entitlement RevenueCat qui débloque l'app. */
-export const ENTITLEMENT_PRO = 'pro';
+export const ENTITLEMENT_PREMIUM = 'premium';
 
 /** Identifiants des packages attendus dans l'offering courant. */
 export const PACKAGE_ID_ANNUAL = '$rc_annual';
@@ -71,21 +71,24 @@ export function isConfigured(): boolean {
 }
 
 function isProActive(info: CustomerInfo): boolean {
-  return info.entitlements.active[ENTITLEMENT_PRO] !== undefined;
+  return info.entitlements.active[ENTITLEMENT_PREMIUM] !== undefined;
 }
 
-/** Offering courant, ou null si indisponible (le paywall a un fallback). */
+/**
+ * Offering à afficher : le courant du dashboard, sinon « default »
+ * explicitement, sinon null (le paywall affiche « … »).
+ */
 export async function getOfferings(): Promise<PurchasesOffering | null> {
   if (!configured) return null;
   try {
     const offerings = await Purchases.getOfferings();
-    return offerings.current ?? null;
+    return offerings.current ?? offerings.all['default'] ?? null;
   } catch {
     return null;
   }
 }
 
-/** Lance l'achat. true si l'entitlement « pro » est actif à l'issue. */
+/** Lance l'achat. true si l'entitlement « premium » est actif à l'issue. */
 export async function purchasePackage(pkg: PurchasesPackage | null): Promise<boolean> {
   if (!configured) {
     // Clés absentes (Expo Go / préview) : achat simulé en dev — ou si
@@ -103,7 +106,7 @@ export async function purchasePackage(pkg: PurchasesPackage | null): Promise<boo
   }
 }
 
-/** Restaure les achats précédents. true si l'entitlement « pro » est actif. */
+/** Restaure les achats précédents. true si l'entitlement « premium » est actif. */
 export async function restorePurchases(): Promise<boolean> {
   if (!configured) return false;
   try {
@@ -114,7 +117,7 @@ export async function restorePurchases(): Promise<boolean> {
   }
 }
 
-/** Expose isPro (entitlement « pro »), tenu à jour par le listener RevenueCat. */
+/** Expose isPro (entitlement « premium »), tenu à jour par le listener RevenueCat. */
 export function useEntitlement(): { isPro: boolean } {
   const [isPro, setIsPro] = useState(false);
 
