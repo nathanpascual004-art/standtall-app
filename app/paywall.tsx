@@ -241,17 +241,20 @@ export default function PaywallScreen() {
             >
               <Card style={[styles.offer, selected === 'annual' && styles.offerSelected]}>
                 <View style={styles.badge}>
-                  <Text style={styles.badgeLabel}>{t('paywall.mostPopular')}</Text>
+                  <Text style={styles.badgeLabel}>{t('paywall.badge.recommended')}</Text>
                 </View>
                 <View style={styles.offerBody}>
                   <View style={styles.offerNameRow}>
                     <Text style={styles.offerName}>{t('paywall.annual')}</Text>
                     <TrialChip />
                   </View>
+                  {/* Le montant réellement débité, aussi lisible que le prix/sem. */}
                   <Text style={styles.offerDetail}>
                     {t('paywall.then')}
-                    <Text style={styles.priceInline}>{annualPrice}</Text>
-                    {t('paywall.perYear')}
+                    <Text style={styles.offerDetailStrong}>
+                      {annualPrice}
+                      {t('paywall.perYear')}
+                    </Text>
                   </Text>
                 </View>
                 <Text style={styles.offerPerWeek}>
@@ -313,6 +316,9 @@ export default function PaywallScreen() {
           disabled={busy}
         />
         <Text style={styles.cancelNote}>{t('paywall.cancelNote')}</Text>
+        {/* Mention légale de renouvellement automatique (Apple 3.1.2) —
+            visible sur le paywall même, en gris lisible. */}
+        <Text style={styles.legalNote}>{t('paywall.legal.autoRenew')}</Text>
         <View style={styles.links}>
           <Pressable onPress={handleRestore} disabled={busy} hitSlop={8}>
             <Text style={styles.link}>{t('paywall.restore')}</Text>
@@ -448,6 +454,13 @@ const styles = StyleSheet.create({
   priceInline: {
     fontFamily: font.bold,
   },
+  // Montant annuel réellement débité : même poids/taille que le prix
+  // hebdo (l'accent reste réservé au prix/sem), jamais discret.
+  offerDetailStrong: {
+    ...type.body,
+    fontFamily: font.bold,
+    color: color.textPrimary,
+  },
   offerPerWeek: {
     ...type.body,
     fontFamily: font.bold,
@@ -465,6 +478,14 @@ const styles = StyleSheet.create({
   },
   cancelNote: {
     ...type.meta,
+    textAlign: 'center',
+  },
+  // Gris LISIBLE (textSecond, pas textMuted) : la mention doit se lire.
+  legalNote: {
+    ...type.meta,
+    fontSize: 11,
+    lineHeight: 15,
+    color: color.textSecond,
     textAlign: 'center',
   },
   links: {

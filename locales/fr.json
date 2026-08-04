@@ -354,7 +354,6 @@
     "benefitMacrosScan": "Tes macros et le scan de repas",
     "benefitNutritionScan": "Ton plan nutrition + scan de repas",
     "trialChip": "3 jours gratuits",
-    "mostPopular": "Le plus choisi",
     "annual": "Annuel",
     "monthly": "Mensuel",
     "weekly": "Hebdo",
@@ -367,6 +366,12 @@
     "cancelNote": "Annulable à tout moment",
     "restore": "Restaurer mes achats",
     "terms": "Conditions",
-    "privacy": "Confidentialité"
+    "privacy": "Confidentialité",
+    "badge": {
+      "recommended": "RECOMMANDÉ"
+    },
+    "legal": {
+      "autoRenew": "Le paiement sera débité de ton compte Apple à la confirmation de l'achat. L'abonnement se renouvelle automatiquement au même tarif, sauf annulation au moins 24 h avant la fin de la période en cours. Tu peux gérer ou résilier ton abonnement dans les réglages de ton compte App Store. Toute partie non utilisée d'une période d'essai gratuite est perdue en cas d'achat d'un abonnement."
+    }
   }
 }

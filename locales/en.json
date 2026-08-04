@@ -354,7 +354,6 @@
     "benefitMacrosScan": "Your macros and the meal scanner",
     "benefitNutritionScan": "Your nutrition plan + meal scanner",
     "trialChip": "3 days free",
-    "mostPopular": "Most popular",
     "annual": "Yearly",
     "monthly": "Monthly",
     "weekly": "Weekly",
@@ -367,6 +366,12 @@
     "cancelNote": "Cancel anytime",
     "restore": "Restore purchases",
     "terms": "Terms",
-    "privacy": "Privacy"
+    "privacy": "Privacy",
+    "badge": {
+      "recommended": "RECOMMENDED"
+    },
+    "legal": {
+      "autoRenew": "Payment will be charged to your Apple Account at confirmation of purchase. Your subscription renews automatically at the same price unless cancelled at least 24 hours before the end of the current period. You can manage or cancel your subscription in your App Store account settings. Any unused portion of a free trial is forfeited when you purchase a subscription."
+    }
   }
 }
