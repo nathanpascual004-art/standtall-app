@@ -9,9 +9,11 @@
     "userInterfaceStyle": "dark",
     "backgroundColor": "#0a0d13",
     "ios": {
+      "bundleIdentifier": "com.standtall7711.StandTall",
       "buildNumber": "1"
     },
     "android": {
+      "package": "com.standtall7711.StandTall",
       "adaptiveIcon": {
         "backgroundColor": "#0a0d13",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
