@@ -1,0 +1,35 @@
+CAPTIONS — one-word ALL-CAPS karaoke
+Style: LIME #C9F73C fill · black outline (~6px) · bold condensed sans · center-lower third.
+Reveal: one word at a time, snapping on the beat (karaoke pop).
+Honesty charter respected: no grow/gain/cm/taller-by-X.
+
+# Format: [mm:ss.ms] WORD
+
+[00:00.20] NOT
+[00:01.10] SHORT
+[00:02.00] COLLAPSED
+
+[00:03.30] CHIN
+[00:04.40] BACK
+[00:06.00] EYES
+[00:07.10] LEVEL
+[00:09.20] STACK
+
+[00:12.30] WALL
+[00:13.60] SLIDE
+[00:15.20] Y
+[00:16.20] TO
+[00:17.20] W
+[00:19.40] OPEN
+
+[00:22.30] JUST
+[00:23.40] HANG
+[00:24.80] SPINE
+[00:26.20] DECOMPRESS
+[00:28.20] FULL
+[00:29.20] HEIGHT
+
+[00:30.30] STAND
+[00:31.20] TALLER
+[00:32.10] DAY
+[00:32.70] ONE
